@@ -23,10 +23,11 @@ ffigen:
   name: 'maid_llm'
   description: 'llama.cpp binding'
   output: 'lib/src/maid_llm.dart'
-  # ignore-source-errors: true
   headers:
     entry-points:
-      - 'llama.cpp/llama.h'
+      - 'src/maid_llm.hpp'
+      - 'src/llama_cpp/llama.h'
+      - 'src/llama_cpp/common/common.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
 
