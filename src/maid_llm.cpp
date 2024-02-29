@@ -1,4 +1,4 @@
-#include "maid_llm.h"
+#include "maid_llm.hpp"
 
 // A very short-lived native function.
 //

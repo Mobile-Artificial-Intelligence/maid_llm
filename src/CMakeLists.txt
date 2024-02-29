@@ -3,10 +3,10 @@
 # the plugin to fail to compile for some customers of the plugin.
 cmake_minimum_required(VERSION 3.10)
 
-project(maid_llm_library VERSION 0.0.1 LANGUAGES C)
+project(maid_llm_library VERSION 0.0.1 LANGUAGES CPP)
 
 add_library(maid_llm SHARED
-  "maid_llm.c"
+  "maid_llm.cpp"
 )
 
 set_target_properties(maid_llm PROPERTIES
