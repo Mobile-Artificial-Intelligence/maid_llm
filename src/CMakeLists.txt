@@ -10,7 +10,7 @@ add_library(maid_llm SHARED
 )
 
 set_target_properties(maid_llm PROPERTIES
-  PUBLIC_HEADER maid_llm.h
+  PUBLIC_HEADER maid_llm.hpp
   OUTPUT_NAME "maid_llm"
 )
 
