@@ -1,0 +1,3 @@
+[submodule "src/llama_cpp"]
+	path = src/llama_cpp
+	url = https://github.com/Mobile-Artificial-Intelligence/llama.cpp.git
