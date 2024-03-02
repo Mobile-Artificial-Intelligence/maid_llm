@@ -12548,14 +12548,14 @@ class maid_llm {
 }
 
 final class maid_llm_params extends ffi.Struct {
-  @ffi.UnsignedChar()
-  external int instruct;
+  @ffi.Bool()
+  external bool instruct;
 
-  @ffi.UnsignedChar()
-  external int interactive;
+  @ffi.Bool()
+  external bool interactive;
 
-  @ffi.UnsignedChar()
-  external int chatml;
+  @ffi.Bool()
+  external bool chatml;
 
   external ffi.Pointer<ffi.Char> path;
 

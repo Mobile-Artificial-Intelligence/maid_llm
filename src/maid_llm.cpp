@@ -18,10 +18,6 @@
 #include <atomic>
 #include <mutex>
 
-#if defined(_MSC_VER)
-#pragma warning(disable: 4244 4267) // possible loss of data
-#endif
-
 static std::atomic_bool stop_generation(false);
 static std::mutex continue_mutex;
 
@@ -60,9 +56,9 @@ int maid_llm_init(struct maid_llm_params *mparams, maid_logger *log_output) {
     n_past       = 0;
     n_consumed   = 0;
 
-    params.instruct                 = (*mparams).instruct          != 0;
-    params.chatml                   = (*mparams).chatml            != 0;
-    params.interactive              = (*mparams).interactive       != 0;
+    params.instruct                 = (*mparams).instruct;
+    params.chatml                   = (*mparams).chatml;
+    params.interactive              = (*mparams).interactive;
 
     params.seed                     = (*mparams).seed              ? (*mparams).seed              : -1;
     params.n_ctx                    = (*mparams).n_ctx             ? (*mparams).n_ctx             : 512;
@@ -84,7 +80,7 @@ int maid_llm_init(struct maid_llm_params *mparams, maid_logger *log_output) {
     params.sparams.mirostat         = (*mparams).mirostat          ? (*mparams).mirostat          : 0;
     params.sparams.mirostat_tau     = (*mparams).mirostat_tau      ? (*mparams).mirostat_tau      : 5.00f;
     params.sparams.mirostat_eta     = (*mparams).mirostat_eta      ? (*mparams).mirostat_eta      : 0.10f;
-    params.sparams.penalize_nl      = (*mparams).penalize_nl       != 0;
+    params.sparams.penalize_nl      = (*mparams).penalize_nl;
 
     params.model                    = (*mparams).path;
     params.prompt                   = (*mparams).preprompt;
@@ -151,49 +147,11 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
 
-    const bool add_bos = llama_should_add_bos_token(model);
-
-    auto inp_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
-    auto inp_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
-
     // Add tokens to embd only if the input buffer is non-empty
     // Entering a empty line lets the user pass control back
     if (buffer.length() > 1) {
         const auto inp_text = ::llama_tokenize(model, buffer, false, false);
-        const auto nl_token = llama_token_nl(model);
-
-        if (params.instruct) {
-            auto instruct_pfx = ::llama_tokenize(ctx, "\n\n### Instruction:\n\n", add_bos, true);
-            embd_inp.insert(embd_inp.end(), instruct_pfx.begin(), instruct_pfx.end());
-        }
-
-        if (params.chatml) {
-            auto chatml_pfx = ::llama_tokenize(ctx, "\n<|im_start|>\n", add_bos, true);
-            embd_inp.insert(embd_inp.end(), chatml_pfx.begin(), chatml_pfx.end());
-        }
-
-        if (params.interactive) {
-            embd_inp.push_back(nl_token);
-            embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
-        }
-        
         embd_inp.insert(embd_inp.end(), inp_text.begin(), inp_text.end());
-
-        if (params.instruct) {
-            auto instruct_sfx = ::llama_tokenize(ctx, "\n\n### Response:\n\n",    false,   true);
-            embd_inp.insert(embd_inp.end(), instruct_sfx.begin(), instruct_sfx.end());
-        }
-
-        if (params.chatml) {
-            auto chatml_sfx = ::llama_tokenize(ctx, "<|im_end|>\n<|im_start|>\n", false, true);
-            embd_inp.insert(embd_inp.end(), chatml_sfx.begin(), chatml_sfx.end());
-        }
-
-        if (params.interactive) {
-            embd_inp.push_back(nl_token);
-            embd_inp.insert(embd_inp.end(), inp_sfx.begin(), inp_sfx.end());
-        }
-
         n_remain -= inp_text.size();
     }
 
@@ -229,73 +187,10 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
             }
         }
 
-        auto embd_out = embd;
-
-        if (prior > 0) prior -= embd_out.size();
-        
-        if (params.interactive && prior <= 0) {
-            // Remove input_prefix from output
-            std::vector<int>::iterator it = embd_out.begin();
-            while (it != embd_out.end()) {
-                if (*it == inp_pfx[n_pfx]) {
-                    embd_cache.push_back(*it);
-                    it = embd_out.erase(it);
-                    n_pfx++;
-        
-                    if (n_pfx == inp_pfx.size()) {
-                        // Prefix found, reset
-                        embd_cache.clear();
-                        n_pfx = 0;
-                        break;
-                    }
-                } else if (n_pfx != 0) {
-                    // Started a sequence but it's broken now, reset
-                    embd_out.insert(embd_out.end(), embd_cache.begin(), embd_cache.end());
-                    embd_cache.clear();
-                    n_pfx = 0;
-                    ++it;
-                } else {
-                    ++it;
-                }
-            }
+        // display text
+        for (auto id : embd) {
+            maid_output(return_code::CONTINUE, llama_token_to_piece(ctx, id).c_str());
         }
-
-        if (suffix_found || !params.interactive) {
-            // display text
-            for (auto id : embd_out) {
-                maid_output(return_code::CONTINUE, llama_token_to_piece(ctx, id).c_str());
-            }
-        }
-        
-        if (params.interactive && prior <= 0) {
-            // Remove input_suffix from output
-            std::vector<int>::iterator it = embd_out.begin();
-            while (it != embd_out.end()) {
-                if (*it == inp_sfx[n_sfx]) {
-                    embd_cache.push_back(*it);
-                    it = embd_out.erase(it);
-                    n_sfx++;
-
-                    if (n_sfx == inp_sfx.size()) {
-                        // Suffix found, reset
-                        suffix_found = true;
-                        embd_cache.clear();
-                        n_sfx = 0;
-                        break;
-                    }
-                } else if (n_sfx != 0) {
-                    // Started a sequence but it's broken now, reset
-                    embd_out.insert(embd_out.end(), embd_cache.begin(), embd_cache.end());
-                    embd_cache.clear();
-                    n_sfx = 0;
-                    ++it;
-                } else {
-                    ++it;
-                }
-            }
-        }
-
-        embd_out.clear();
 
         // predict
         if (!embd.empty()) {

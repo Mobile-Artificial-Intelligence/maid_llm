@@ -10,9 +10,9 @@
 #endif
 
 struct maid_llm_params {
-   unsigned char instruct;
-   unsigned char interactive;
-   unsigned char chatml;
+   bool instruct;
+   bool interactive;
+   bool chatml;
 
    char *path;
    char *preprompt;
