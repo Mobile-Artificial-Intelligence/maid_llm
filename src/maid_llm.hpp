@@ -1,5 +1,5 @@
-#ifndef __BRIDGE_H
-#define __BRIDGE_H
+#ifndef _MAID_LLM_H
+#define _MAID_LLM_H
 
 #include <stdbool.h>
 
