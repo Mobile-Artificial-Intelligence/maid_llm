@@ -12543,6 +12543,241 @@ class maid_llm {
       _dump_kv_cache_view_seqsPtr.asFunction<void Function(int)>();
 }
 
+final class gpt_c_params extends ffi.Struct {
+  @ffi.Int()
+  external int seed;
+
+  @ffi.Int()
+  external int n_threads;
+
+  @ffi.Int()
+  external int n_threads_draft;
+
+  @ffi.Int()
+  external int n_threads_batch;
+
+  @ffi.Int()
+  external int n_threads_batch_draft;
+
+  @ffi.Int()
+  external int n_predict;
+
+  @ffi.Int()
+  external int n_ctx;
+
+  @ffi.Int()
+  external int n_batch;
+
+  @ffi.Int()
+  external int n_keep;
+
+  @ffi.Int()
+  external int n_draft;
+
+  @ffi.Int()
+  external int n_chunks;
+
+  @ffi.Int()
+  external int n_parallel;
+
+  @ffi.Int()
+  external int n_sequences;
+
+  @ffi.Float()
+  external double p_accept;
+
+  @ffi.Float()
+  external double p_split;
+
+  @ffi.Int()
+  external int n_gpu_layers;
+
+  @ffi.Int()
+  external int n_gpu_layers_draft;
+
+  @ffi.Char()
+  external int split_mode;
+
+  @ffi.Int()
+  external int main_gpu;
+
+  @ffi.Array.multi([128])
+  external ffi.Array<ffi.Float> tensor_split;
+
+  @ffi.Int()
+  external int n_beams;
+
+  @ffi.Int()
+  external int grp_attn_n;
+
+  @ffi.Int()
+  external int grp_attn_w;
+
+  @ffi.Int()
+  external int n_print;
+
+  @ffi.Float()
+  external double rope_freq_base;
+
+  @ffi.Float()
+  external double rope_freq_scale;
+
+  @ffi.Float()
+  external double yarn_ext_factor;
+
+  @ffi.Float()
+  external double yarn_attn_factor;
+
+  @ffi.Float()
+  external double yarn_beta_fast;
+
+  @ffi.Float()
+  external double yarn_beta_slow;
+
+  @ffi.Int()
+  external int yarn_orig_ctx;
+
+  @ffi.Float()
+  external double defrag_thold;
+
+  @ffi.Int()
+  external int rope_scaling_type;
+
+  @ffi.Char()
+  external int numa;
+
+  external ffi.Pointer<ffi.Char> model;
+
+  external ffi.Pointer<ffi.Char> model_draft;
+
+  external ffi.Pointer<ffi.Char> model_alias;
+
+  external ffi.Pointer<ffi.Char> prompt;
+
+  external ffi.Pointer<ffi.Char> prompt_file;
+
+  external ffi.Pointer<ffi.Char> path_prompt_cache;
+
+  external ffi.Pointer<ffi.Char> input_prefix;
+
+  external ffi.Pointer<ffi.Char> input_suffix;
+
+  external ffi.Pointer<ffi.Char> antiprompt;
+
+  external ffi.Pointer<ffi.Char> logdir;
+
+  external ffi.Pointer<ffi.Char> logits_file;
+
+  external ffi.Pointer<ffi.Char> lora_base;
+
+  @ffi.Int()
+  external int ppl_stride;
+
+  @ffi.Int()
+  external int ppl_output_type;
+
+  @ffi.Bool()
+  external bool hellaswag;
+
+  @ffi.UnsignedLong()
+  external int hellaswag_tasks;
+
+  @ffi.Bool()
+  external bool winogrande;
+
+  @ffi.UnsignedLong()
+  external int winogrande_tasks;
+
+  @ffi.Bool()
+  external bool multiple_choice;
+
+  @ffi.UnsignedLong()
+  external int multiple_choice_tasks;
+
+  @ffi.Bool()
+  external bool kl_divergence;
+
+  @ffi.Bool()
+  external bool mul_mat_q;
+
+  @ffi.Bool()
+  external bool random_prompt;
+
+  @ffi.Bool()
+  external bool use_color;
+
+  @ffi.Bool()
+  external bool interactive;
+
+  @ffi.Bool()
+  external bool chatml;
+
+  @ffi.Bool()
+  external bool prompt_cache_all;
+
+  @ffi.Bool()
+  external bool prompt_cache_ro;
+
+  @ffi.Bool()
+  external bool embedding;
+
+  @ffi.Bool()
+  external bool escape;
+
+  @ffi.Bool()
+  external bool interactive_first;
+
+  @ffi.Bool()
+  external bool multiline_input;
+
+  @ffi.Bool()
+  external bool simple_io;
+
+  @ffi.Bool()
+  external bool cont_batching;
+
+  @ffi.Bool()
+  external bool input_prefix_bos;
+
+  @ffi.Bool()
+  external bool ignore_eos;
+
+  @ffi.Bool()
+  external bool instruct;
+
+  @ffi.Bool()
+  external bool logits_all;
+
+  @ffi.Bool()
+  external bool use_mmap;
+
+  @ffi.Bool()
+  external bool use_mlock;
+
+  @ffi.Bool()
+  external bool verbose_prompt;
+
+  @ffi.Bool()
+  external bool display_prompt;
+
+  @ffi.Bool()
+  external bool infill;
+
+  @ffi.Bool()
+  external bool dump_kv_cache;
+
+  @ffi.Bool()
+  external bool no_kv_offload;
+
+  external ffi.Pointer<ffi.Char> cache_type_k;
+
+  external ffi.Pointer<ffi.Char> cache_type_v;
+
+  external ffi.Pointer<ffi.Char> mmproj;
+
+  external ffi.Pointer<ffi.Char> image;
+}
+
 final class maid_llm_params extends ffi.Struct {
   @ffi.Bool()
   external bool instruct;
