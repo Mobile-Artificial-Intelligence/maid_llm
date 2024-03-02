@@ -141,14 +141,10 @@ class maid_llm {
 
   int get GGML_OBJECT_SIZE => _GGML_OBJECT_SIZE.value;
 
-  set GGML_OBJECT_SIZE(int value) => _GGML_OBJECT_SIZE.value = value;
-
   late final ffi.Pointer<ffi.Size> _GGML_TENSOR_SIZE =
       _lookup<ffi.Size>('GGML_TENSOR_SIZE');
 
   int get GGML_TENSOR_SIZE => _GGML_TENSOR_SIZE.value;
-
-  set GGML_TENSOR_SIZE(int value) => _GGML_TENSOR_SIZE.value = value;
 
   void ggml_time_init() {
     return _ggml_time_init();
@@ -12644,6 +12640,7 @@ final class __fsid_t extends ffi.Struct {
 final class max_align_t extends ffi.Opaque {}
 
 typedef ggml_fp16_t = ffi.Uint16;
+typedef Dartggml_fp16_t = int;
 
 final class ggml_object extends ffi.Struct {
   @ffi.Size()
@@ -12909,8 +12906,12 @@ final class ggml_cplan extends ffi.Struct {
   external ffi.Pointer<ffi.Void> abort_callback_data;
 }
 
-typedef ggml_abort_callback = ffi
-    .Pointer<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void> data)>>;
+typedef ggml_abort_callback
+    = ffi.Pointer<ffi.NativeFunction<ggml_abort_callbackFunction>>;
+typedef ggml_abort_callbackFunction = ffi.Bool Function(
+    ffi.Pointer<ffi.Void> data);
+typedef Dartggml_abort_callbackFunction = bool Function(
+    ffi.Pointer<ffi.Void> data);
 
 abstract class ggml_cgraph_eval_order {
   static const int GGML_CGRAPH_EVAL_ORDER_LEFT_TO_RIGHT = 0;
@@ -13018,52 +13019,94 @@ abstract class ggml_sort_order {
   static const int GGML_SORT_ORDER_DESC = 1;
 }
 
-typedef ggml_unary_op_f32_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Int, ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>)>>;
-typedef ggml_binary_op_f32_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Int, ffi.Pointer<ffi.Float>,
-            ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>)>>;
-typedef ggml_custom1_op_f32_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>)>>;
-typedef ggml_custom2_op_f32_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>,
-            ffi.Pointer<ggml_tensor>)>>;
-typedef ggml_custom3_op_f32_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>,
-            ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>)>>;
-typedef ggml_custom1_op_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Pointer<ggml_tensor> dst,
-            ffi.Pointer<ggml_tensor> a,
-            ffi.Int ith,
-            ffi.Int nth,
-            ffi.Pointer<ffi.Void> userdata)>>;
-typedef ggml_custom2_op_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Pointer<ggml_tensor> dst,
-            ffi.Pointer<ggml_tensor> a,
-            ffi.Pointer<ggml_tensor> b,
-            ffi.Int ith,
-            ffi.Int nth,
-            ffi.Pointer<ffi.Void> userdata)>>;
-typedef ggml_custom3_op_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Pointer<ggml_tensor> dst,
-            ffi.Pointer<ggml_tensor> a,
-            ffi.Pointer<ggml_tensor> b,
-            ffi.Pointer<ggml_tensor> c,
-            ffi.Int ith,
-            ffi.Int nth,
-            ffi.Pointer<ffi.Void> userdata)>>;
+typedef ggml_unary_op_f32_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_unary_op_f32_tFunction>>;
+typedef ggml_unary_op_f32_tFunction = ffi.Void Function(
+    ffi.Int, ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>);
+typedef Dartggml_unary_op_f32_tFunction = void Function(
+    int, ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>);
+typedef ggml_binary_op_f32_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_binary_op_f32_tFunction>>;
+typedef ggml_binary_op_f32_tFunction = ffi.Void Function(ffi.Int,
+    ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>);
+typedef Dartggml_binary_op_f32_tFunction = void Function(int,
+    ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>, ffi.Pointer<ffi.Float>);
+typedef ggml_custom1_op_f32_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom1_op_f32_tFunction>>;
+typedef ggml_custom1_op_f32_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>);
+typedef Dartggml_custom1_op_f32_tFunction = void Function(
+    ffi.Pointer<ggml_tensor>, ffi.Pointer<ggml_tensor>);
+typedef ggml_custom2_op_f32_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom2_op_f32_tFunction>>;
+typedef ggml_custom2_op_f32_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>);
+typedef Dartggml_custom2_op_f32_tFunction = void Function(
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>);
+typedef ggml_custom3_op_f32_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom3_op_f32_tFunction>>;
+typedef ggml_custom3_op_f32_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>);
+typedef Dartggml_custom3_op_f32_tFunction = void Function(
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>,
+    ffi.Pointer<ggml_tensor>);
+typedef ggml_custom1_op_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom1_op_tFunction>>;
+typedef ggml_custom1_op_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    ffi.Int ith,
+    ffi.Int nth,
+    ffi.Pointer<ffi.Void> userdata);
+typedef Dartggml_custom1_op_tFunction = void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    int ith,
+    int nth,
+    ffi.Pointer<ffi.Void> userdata);
+typedef ggml_custom2_op_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom2_op_tFunction>>;
+typedef ggml_custom2_op_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    ffi.Pointer<ggml_tensor> b,
+    ffi.Int ith,
+    ffi.Int nth,
+    ffi.Pointer<ffi.Void> userdata);
+typedef Dartggml_custom2_op_tFunction = void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    ffi.Pointer<ggml_tensor> b,
+    int ith,
+    int nth,
+    ffi.Pointer<ffi.Void> userdata);
+typedef ggml_custom3_op_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_custom3_op_tFunction>>;
+typedef ggml_custom3_op_tFunction = ffi.Void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    ffi.Pointer<ggml_tensor> b,
+    ffi.Pointer<ggml_tensor> c,
+    ffi.Int ith,
+    ffi.Int nth,
+    ffi.Pointer<ffi.Void> userdata);
+typedef Dartggml_custom3_op_tFunction = void Function(
+    ffi.Pointer<ggml_tensor> dst,
+    ffi.Pointer<ggml_tensor> a,
+    ffi.Pointer<ggml_tensor> b,
+    ffi.Pointer<ggml_tensor> c,
+    int ith,
+    int nth,
+    ffi.Pointer<ffi.Void> userdata);
 
 abstract class ggml_opt_type {
   static const int GGML_OPT_TYPE_ADAM = 0;
@@ -13272,10 +13315,18 @@ final class UnnamedStruct4 extends ffi.Struct {
   external int n_no_improvement;
 }
 
-typedef ggml_opt_callback = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Pointer<ffi.Void> data, ffi.Int accum_step,
-            ffi.Pointer<ffi.Float> sched, ffi.Pointer<ffi.Bool> cancel)>>;
+typedef ggml_opt_callback
+    = ffi.Pointer<ffi.NativeFunction<ggml_opt_callbackFunction>>;
+typedef ggml_opt_callbackFunction = ffi.Void Function(
+    ffi.Pointer<ffi.Void> data,
+    ffi.Int accum_step,
+    ffi.Pointer<ffi.Float> sched,
+    ffi.Pointer<ffi.Bool> cancel);
+typedef Dartggml_opt_callbackFunction = void Function(
+    ffi.Pointer<ffi.Void> data,
+    int accum_step,
+    ffi.Pointer<ffi.Float> sched,
+    ffi.Pointer<ffi.Bool> cancel);
 
 abstract class gguf_type {
   static const int GGUF_TYPE_UINT8 = 0;
@@ -13330,25 +13381,38 @@ final class ggml_type_traits_t extends ffi.Struct {
   external int nrows;
 }
 
-typedef ggml_to_float_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Pointer<ffi.Void> x, ffi.Pointer<ffi.Float> y, ffi.Int k)>>;
-typedef ggml_from_float_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Pointer<ffi.Float> x, ffi.Pointer<ffi.Void> y, ffi.Int k)>>;
-typedef ggml_vec_dot_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(
-            ffi.Int n,
-            ffi.Pointer<ffi.Float> s,
-            ffi.Size bs,
-            ffi.Pointer<ffi.Void> x,
-            ffi.Size bx,
-            ffi.Pointer<ffi.Void> y,
-            ffi.Size by,
-            ffi.Int nrc)>>;
+typedef ggml_to_float_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_to_float_tFunction>>;
+typedef ggml_to_float_tFunction = ffi.Void Function(
+    ffi.Pointer<ffi.Void> x, ffi.Pointer<ffi.Float> y, ffi.Int k);
+typedef Dartggml_to_float_tFunction = void Function(
+    ffi.Pointer<ffi.Void> x, ffi.Pointer<ffi.Float> y, int k);
+typedef ggml_from_float_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_from_float_tFunction>>;
+typedef ggml_from_float_tFunction = ffi.Void Function(
+    ffi.Pointer<ffi.Float> x, ffi.Pointer<ffi.Void> y, ffi.Int k);
+typedef Dartggml_from_float_tFunction = void Function(
+    ffi.Pointer<ffi.Float> x, ffi.Pointer<ffi.Void> y, int k);
+typedef ggml_vec_dot_t
+    = ffi.Pointer<ffi.NativeFunction<ggml_vec_dot_tFunction>>;
+typedef ggml_vec_dot_tFunction = ffi.Void Function(
+    ffi.Int n,
+    ffi.Pointer<ffi.Float> s,
+    ffi.Size bs,
+    ffi.Pointer<ffi.Void> x,
+    ffi.Size bx,
+    ffi.Pointer<ffi.Void> y,
+    ffi.Size by,
+    ffi.Int nrc);
+typedef Dartggml_vec_dot_tFunction = void Function(
+    int n,
+    ffi.Pointer<ffi.Float> s,
+    int bs,
+    ffi.Pointer<ffi.Void> x,
+    int bx,
+    ffi.Pointer<ffi.Void> y,
+    int by,
+    int nrc);
 
 final class ggml_backend_buffer_type extends ffi.Opaque {}
 
@@ -13375,10 +13439,12 @@ typedef ggml_backend_graph_plan_t = ffi.Pointer<ffi.Void>;
 final class ggml_backend_sched extends ffi.Opaque {}
 
 typedef ggml_backend_sched_t = ffi.Pointer<ggml_backend_sched>;
-typedef ggml_backend_sched_eval_callback = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Bool Function(ffi.Pointer<ggml_tensor> t, ffi.Bool ask,
-            ffi.Pointer<ffi.Void> user_data)>>;
+typedef ggml_backend_sched_eval_callback
+    = ffi.Pointer<ffi.NativeFunction<ggml_backend_sched_eval_callbackFunction>>;
+typedef ggml_backend_sched_eval_callbackFunction = ffi.Bool Function(
+    ffi.Pointer<ggml_tensor> t, ffi.Bool ask, ffi.Pointer<ffi.Void> user_data);
+typedef Dartggml_backend_sched_eval_callbackFunction = bool Function(
+    ffi.Pointer<ggml_tensor> t, bool ask, ffi.Pointer<ffi.Void> user_data);
 
 final class ggml_backend_graph_copy extends ffi.Struct {
   external ggml_backend_buffer_t buffer;
@@ -13390,10 +13456,18 @@ final class ggml_backend_graph_copy extends ffi.Struct {
   external ffi.Pointer<ggml_cgraph> graph;
 }
 
-typedef ggml_backend_eval_callback = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Bool Function(ffi.Int node_index, ffi.Pointer<ggml_tensor> t1,
-            ffi.Pointer<ggml_tensor> t2, ffi.Pointer<ffi.Void> user_data)>>;
+typedef ggml_backend_eval_callback
+    = ffi.Pointer<ffi.NativeFunction<ggml_backend_eval_callbackFunction>>;
+typedef ggml_backend_eval_callbackFunction = ffi.Bool Function(
+    ffi.Int node_index,
+    ffi.Pointer<ggml_tensor> t1,
+    ffi.Pointer<ggml_tensor> t2,
+    ffi.Pointer<ffi.Void> user_data);
+typedef Dartggml_backend_eval_callbackFunction = bool Function(
+    int node_index,
+    ffi.Pointer<ggml_tensor> t1,
+    ffi.Pointer<ggml_tensor> t2,
+    ffi.Pointer<ffi.Void> user_data);
 
 final class __mbstate_t extends ffi.Struct {
   @ffi.Int()
@@ -13418,6 +13492,7 @@ final class _G_fpos_t extends ffi.Struct {
 }
 
 typedef __off_t = ffi.Long;
+typedef Dart__off_t = int;
 
 final class _G_fpos64_t extends ffi.Struct {
   @__off64_t()
@@ -13427,6 +13502,7 @@ final class _G_fpos64_t extends ffi.Struct {
 }
 
 typedef __off64_t = ffi.Long;
+typedef Dart__off64_t = int;
 
 final class _IO_FILE extends ffi.Struct {
   @ffi.Int()
@@ -13502,6 +13578,7 @@ final class _IO_FILE extends ffi.Struct {
 final class _IO_marker extends ffi.Opaque {}
 
 typedef _IO_lock_t = ffi.Void;
+typedef Dart_IO_lock_t = void;
 
 final class _IO_codecvt extends ffi.Opaque {}
 
@@ -13521,6 +13598,7 @@ typedef cookie_read_function_t = ffi.NativeFunction<
     __ssize_t Function(ffi.Pointer<ffi.Void> __cookie,
         ffi.Pointer<ffi.Char> __buf, ffi.Size __nbytes)>;
 typedef __ssize_t = ffi.Long;
+typedef Dart__ssize_t = int;
 typedef cookie_write_function_t = ffi.NativeFunction<
     __ssize_t Function(ffi.Pointer<ffi.Void> __cookie,
         ffi.Pointer<ffi.Char> __buf, ffi.Size __nbytes)>;
@@ -13639,6 +13717,7 @@ final class llama_token_data extends ffi.Struct {
 }
 
 typedef llama_token = ffi.Int32;
+typedef Dartllama_token = int;
 
 final class llama_token_data_array extends ffi.Struct {
   external ffi.Pointer<llama_token_data> data;
@@ -13677,7 +13756,9 @@ final class llama_batch extends ffi.Struct {
 }
 
 typedef llama_pos = ffi.Int32;
+typedef Dartllama_pos = int;
 typedef llama_seq_id = ffi.Int32;
+typedef Dartllama_seq_id = int;
 
 abstract class llama_model_kv_override_type {
   static const int LLAMA_KV_OVERRIDE_TYPE_INT = 0;
@@ -13734,9 +13815,12 @@ final class llama_model_params extends ffi.Struct {
   external bool use_mlock;
 }
 
-typedef llama_progress_callback = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Bool Function(ffi.Float progress, ffi.Pointer<ffi.Void> ctx)>>;
+typedef llama_progress_callback
+    = ffi.Pointer<ffi.NativeFunction<llama_progress_callbackFunction>>;
+typedef llama_progress_callbackFunction = ffi.Bool Function(
+    ffi.Float progress, ffi.Pointer<ffi.Void> ctx);
+typedef Dartllama_progress_callbackFunction = bool Function(
+    double progress, ffi.Pointer<ffi.Void> ctx);
 
 final class llama_context_params extends ffi.Struct {
   @ffi.Uint32()
@@ -13939,13 +14023,18 @@ final class llama_beams_state extends ffi.Struct {
   external bool last_call;
 }
 
-typedef llama_beam_search_callback_fn_t = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Pointer<ffi.Void>, llama_beams_state)>>;
-typedef ggml_log_callback = ffi.Pointer<
-    ffi.NativeFunction<
-        ffi.Void Function(ffi.Int32 level, ffi.Pointer<ffi.Char> text,
-            ffi.Pointer<ffi.Void> user_data)>>;
+typedef llama_beam_search_callback_fn_t
+    = ffi.Pointer<ffi.NativeFunction<llama_beam_search_callback_fn_tFunction>>;
+typedef llama_beam_search_callback_fn_tFunction = ffi.Void Function(
+    ffi.Pointer<ffi.Void>, llama_beams_state);
+typedef Dartllama_beam_search_callback_fn_tFunction = void Function(
+    ffi.Pointer<ffi.Void>, llama_beams_state);
+typedef ggml_log_callback
+    = ffi.Pointer<ffi.NativeFunction<ggml_log_callbackFunction>>;
+typedef ggml_log_callbackFunction = ffi.Void Function(ffi.Int32 level,
+    ffi.Pointer<ffi.Char> text, ffi.Pointer<ffi.Void> user_data);
+typedef Dartggml_log_callbackFunction = void Function(
+    int level, ffi.Pointer<ffi.Char> text, ffi.Pointer<ffi.Void> user_data);
 
 abstract class class1 {}
 
