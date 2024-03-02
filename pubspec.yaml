@@ -22,7 +22,7 @@ dev_dependencies:
 ffigen:
   name: 'maid_llm'
   description: 'llama.cpp binding'
-  output: 'lib/src/maid_llm.dart'
+  output: 'lib/src/bindings.dart'
   headers:
     entry-points:
       - 'src/maid_llm.hpp'
