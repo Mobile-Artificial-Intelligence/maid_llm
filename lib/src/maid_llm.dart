@@ -19,6 +19,57 @@ class maid_llm {
           lookup)
       : _lookup = lookup;
 
+  int maid_llm_init(
+    ffi.Pointer<maid_llm_params> mparams,
+    ffi.Pointer<maid_logger> log_output,
+  ) {
+    return _maid_llm_init(
+      mparams,
+      log_output,
+    );
+  }
+
+  late final _maid_llm_initPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<maid_llm_params>,
+              ffi.Pointer<maid_logger>)>>('maid_llm_init');
+  late final _maid_llm_init = _maid_llm_initPtr.asFunction<
+      int Function(ffi.Pointer<maid_llm_params>, ffi.Pointer<maid_logger>)>();
+
+  int maid_llm_prompt(
+    ffi.Pointer<ffi.Char> input,
+    ffi.Pointer<maid_output_stream> maid_output,
+  ) {
+    return _maid_llm_prompt(
+      input,
+      maid_output,
+    );
+  }
+
+  late final _maid_llm_promptPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Char>,
+              ffi.Pointer<maid_output_stream>)>>('maid_llm_prompt');
+  late final _maid_llm_prompt = _maid_llm_promptPtr.asFunction<
+      int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<maid_output_stream>)>();
+
+  void maid_llm_stop() {
+    return _maid_llm_stop();
+  }
+
+  late final _maid_llm_stopPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function()>>('maid_llm_stop');
+  late final _maid_llm_stop = _maid_llm_stopPtr.asFunction<void Function()>();
+
+  void maid_llm_cleanup() {
+    return _maid_llm_cleanup();
+  }
+
+  late final _maid_llm_cleanupPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function()>>('maid_llm_cleanup');
+  late final _maid_llm_cleanup =
+      _maid_llm_cleanupPtr.asFunction<void Function()>();
+
   double ggml_fp16_to_fp32(
     int x,
   ) {
@@ -12496,6 +12547,95 @@ class maid_llm {
       _dump_kv_cache_view_seqsPtr.asFunction<void Function(int)>();
 }
 
+final class maid_llm_params extends ffi.Struct {
+  @ffi.UnsignedChar()
+  external int instruct;
+
+  @ffi.UnsignedChar()
+  external int interactive;
+
+  @ffi.UnsignedChar()
+  external int chatml;
+
+  external ffi.Pointer<ffi.Char> path;
+
+  external ffi.Pointer<ffi.Char> preprompt;
+
+  external ffi.Pointer<ffi.Char> input_prefix;
+
+  external ffi.Pointer<ffi.Char> input_suffix;
+
+  @ffi.UnsignedInt()
+  external int seed;
+
+  @ffi.Int()
+  external int n_ctx;
+
+  @ffi.Int()
+  external int n_batch;
+
+  @ffi.Int()
+  external int n_threads;
+
+  @ffi.Int()
+  external int n_predict;
+
+  @ffi.Int()
+  external int n_keep;
+
+  @ffi.Int()
+  external int top_k;
+
+  @ffi.Float()
+  external double top_p;
+
+  @ffi.Float()
+  external double min_p;
+
+  @ffi.Float()
+  external double tfs_z;
+
+  @ffi.Float()
+  external double typical_p;
+
+  @ffi.Float()
+  external double temp;
+
+  @ffi.Int()
+  external int penalty_last_n;
+
+  @ffi.Float()
+  external double penalty_repeat;
+
+  @ffi.Float()
+  external double penalty_freq;
+
+  @ffi.Float()
+  external double penalty_present;
+
+  @ffi.Int()
+  external int mirostat;
+
+  @ffi.Float()
+  external double mirostat_tau;
+
+  @ffi.Float()
+  external double mirostat_eta;
+
+  @ffi.Bool()
+  external bool penalize_nl;
+}
+
+abstract class return_code {
+  static const int STOP = 0;
+  static const int CONTINUE = 1;
+}
+
+typedef maid_logger
+    = ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Char> buffer)>;
+typedef maid_output_stream = ffi.NativeFunction<
+    ffi.Void Function(ffi.UnsignedChar code, ffi.Pointer<ffi.Char> buffer)>;
+
 final class __fsid_t extends ffi.Struct {
   @ffi.Array.multi([2])
   external ffi.Array<ffi.Int> __val;
@@ -14176,6 +14316,8 @@ final class gpt_params extends ffi.Struct {
   external int unnamed17;
 }
 
+const int __bool_true_false_are_defined = 1;
+
 const int _STDINT_H = 1;
 
 const int _FEATURES_H = 1;
@@ -14403,8 +14545,6 @@ const int WINT_MIN = 0;
 const int WINT_MAX = 4294967295;
 
 const int NULL = 0;
-
-const int __bool_true_false_are_defined = 1;
 
 const int true1 = 1;
 

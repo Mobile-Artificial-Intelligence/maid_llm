@@ -27,6 +27,7 @@ ffigen:
     entry-points:
       - 'src/maid_llm.hpp'
       - 'src/llama_cpp/llama.h'
+      - 'src/llama_cpp/ggml.h'
       - 'src/llama_cpp/common/common.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
