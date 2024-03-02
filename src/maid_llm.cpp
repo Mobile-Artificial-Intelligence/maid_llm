@@ -40,13 +40,116 @@ static llama_context_params lparams;
 
 static maid_logger *maid_logger_callback;
 
+static gpt_params from_c_params(struct gpt_c_params *c_params) {
+    gpt_params cpp_params;
+
+    cpp_params.seed                     = c_params->seed;
+    cpp_params.n_threads                = c_params->n_threads;
+    cpp_params.n_threads_draft          = c_params->n_threads_draft;
+    cpp_params.n_threads_batch          = c_params->n_threads_batch;
+    cpp_params.n_threads_batch_draft    = c_params->n_threads_batch_draft;
+    cpp_params.n_predict                = c_params->n_predict;
+    cpp_params.n_ctx                    = c_params->n_ctx;
+    cpp_params.n_batch                  = c_params->n_batch;
+    cpp_params.n_keep                   = c_params->n_keep;
+    cpp_params.n_draft                  = c_params->n_draft;
+    cpp_params.n_chunks                 = c_params->n_chunks;
+    cpp_params.n_parallel               = c_params->n_parallel;
+    cpp_params.n_sequences              = c_params->n_sequences;
+    cpp_params.p_accept                 = c_params->p_accept;
+    cpp_params.p_split                  = c_params->p_split;
+    cpp_params.n_gpu_layers             = c_params->n_gpu_layers;
+    cpp_params.n_gpu_layers_draft       = c_params->n_gpu_layers_draft;
+
+    switch (c_params->split_mode) {
+        case 0:
+            cpp_params.split_mode = LLAMA_SPLIT_MODE_NONE;
+            break;
+        case 1:
+            cpp_params.split_mode = LLAMA_SPLIT_MODE_LAYER;
+            break;
+        case 2:
+            cpp_params.split_mode = LLAMA_SPLIT_MODE_ROW;
+            break;
+    };
+
+    cpp_params.main_gpu                 = c_params->main_gpu;
+    cpp_params.n_beams                  = c_params->n_beams;
+    cpp_params.grp_attn_n               = c_params->grp_attn_n;
+    cpp_params.grp_attn_w               = c_params->grp_attn_w;
+    cpp_params.n_print                  = c_params->n_print;
+    cpp_params.rope_freq_base           = c_params->rope_freq_base;
+    cpp_params.rope_freq_scale          = c_params->rope_freq_scale;
+    cpp_params.yarn_ext_factor          = c_params->yarn_ext_factor;
+    cpp_params.yarn_attn_factor         = c_params->yarn_attn_factor;
+    cpp_params.yarn_beta_fast           = c_params->yarn_beta_fast;
+    cpp_params.yarn_beta_slow           = c_params->yarn_beta_slow;
+    cpp_params.yarn_orig_ctx            = c_params->yarn_orig_ctx;
+    cpp_params.defrag_thold             = c_params->defrag_thold;
+    cpp_params.rope_scaling_type        = c_params->rope_scaling_type;
+
+    switch (c_params->numa) {
+        case 0:
+            cpp_params.numa = GGML_NUMA_STRATEGY_DISABLED;
+            break;
+        case 1:
+            cpp_params.numa = GGML_NUMA_STRATEGY_DISTRIBUTE;
+            break;
+        case 2:
+            cpp_params.numa = GGML_NUMA_STRATEGY_ISOLATE;
+            break;
+        case 3:
+            cpp_params.numa = GGML_NUMA_STRATEGY_NUMACTL;
+            break;
+        case 4:
+            cpp_params.numa = GGML_NUMA_STRATEGY_MIRROR;
+            break;
+        case 5:
+            cpp_params.numa = GGML_NUMA_STRATEGY_COUNT;
+            break;
+    };
+
+    cpp_params.model                    = c_params->model;
+    cpp_params.model_draft              = c_params->model_draft;
+    cpp_params.model_alias              = c_params->model_alias;
+    cpp_params.prompt                   = c_params->prompt;
+    cpp_params.prompt_file              = c_params->prompt_file;
+    cpp_params.path_prompt_cache        = c_params->path_prompt_cache;
+    cpp_params.input_prefix             = c_params->input_prefix;
+    cpp_params.input_suffix             = c_params->input_suffix;
+    cpp_params.antiprompt.push_back(c_params->antiprompt);
+    cpp_params.logdir                   = c_params->logdir;
+    cpp_params.logits_file              = c_params->logits_file;
+
+    cpp_params.lora_base                = c_params->lora_base;
+
+    cpp_params.ppl_stride               = c_params->ppl_stride;
+    cpp_params.ppl_output_type          = c_params->ppl_output_type;
+
+    cpp_params.hellaswag                = c_params->hellaswag;
+    cpp_params.hellaswag_tasks          = c_params->hellaswag_tasks;
+
+    cpp_params.winogrande               = c_params->winogrande;
+    cpp_params.winogrande_tasks         = c_params->winogrande_tasks;
+
+    cpp_params.multiple_choice          = c_params->multiple_choice;
+    cpp_params.multiple_choice_tasks    = c_params->multiple_choice_tasks;
+
+    cpp_params.kl_divergence            = c_params->kl_divergence;
+
+    cpp_params.mul_mat_q                = c_params->mul_mat_q;
+    cpp_params.random_prompt            = c_params->random_prompt;
+
+    return cpp_params;
+}
+
 static void maid_llm_log_callback(ggml_log_level level, const char * text, void * user_data) {
     (void) level;
     (void) user_data;
     maid_logger_callback(text);
 }
 
-int maid_llm_init(struct maid_llm_params *mparams, maid_logger *log_output) {
+int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output) {
     llama_backend_init();
 
     maid_logger_callback = log_output;

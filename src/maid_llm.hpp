@@ -6,38 +6,38 @@
 struct gpt_c_params {
     signed int seed                 = -1;       // RNG seed
 
-    int n_threads               = get_num_physical_cores();
-    int n_threads_draft         = -1;
-    int n_threads_batch         = -1;           // number of threads to use for batch processing (-1 = use n_threads)
-    int n_threads_batch_draft   = -1;
-    int n_predict               = -1;           // new tokens to predict
-    int n_ctx                   = 512;          // context size
-    int n_batch                 = 512;          // batch size for prompt processing (must be >=32 to use BLAS)
-    int n_keep                  = 0;            // number of tokens to keep from initial prompt
-    int n_draft                 = 8;            // number of tokens to draft during speculative decoding
-    int n_chunks                = -1;           // max number of chunks to process (-1 = unlimited)
-    int n_parallel              = 1;            // number of parallel sequences to decode
-    int n_sequences             = 1;            // number of sequences to decode
-    float   p_accept                = 0.5f;     // speculative decoding accept probability
-    float   p_split                 = 0.1f;     // speculative decoding split probability
-    int n_gpu_layers            = -1;           // number of layers to store in VRAM (-1 - use default)
-    int n_gpu_layers_draft      = -1;           // number of layers to store in VRAM for the draft model (-1 - use default)
+    int n_threads                   = 8;
+    int n_threads_draft             = -1;
+    int n_threads_batch             = -1;       // number of threads to use for batch processing (-1 = use n_threads)
+    int n_threads_batch_draft       = -1;
+    int n_predict                   = -1;       // new tokens to predict
+    int n_ctx                       = 512;      // context size
+    int n_batch                     = 512;      // batch size for prompt processing (must be >=32 to use BLAS)
+    int n_keep                      = 0;        // number of tokens to keep from initial prompt
+    int n_draft                     = 8;        // number of tokens to draft during speculative decoding
+    int n_chunks                    = -1;       // max number of chunks to process (-1 = unlimited)
+    int n_parallel                  = 1;        // number of parallel sequences to decode
+    int n_sequences                 = 1;        // number of sequences to decode
+    float p_accept                  = 0.5f;     // speculative decoding accept probability
+    float p_split                   = 0.1f;     // speculative decoding split probability
+    int n_gpu_layers                = -1;       // number of layers to store in VRAM (-1 - use default)
+    int n_gpu_layers_draft          = -1;       // number of layers to store in VRAM for the draft model (-1 - use default)
     char split_mode                 = 1;        // how to split the model across GPUs
-    int main_gpu                = 0;            // the GPU that is used for scratch and small tensors
-    float   tensor_split[128]       = {0};      // how split tensors should be distributed across GPUs
-    int n_beams                 = 0;            // if non-zero then use beam search of given width.
-    int grp_attn_n              = 1;            // group-attention factor
-    int grp_attn_w              = 512;          // group-attention width
-    int n_print                 = -1;           // print token count every n tokens (-1 = disabled)
-    float   rope_freq_base          = 0.0f;     // RoPE base frequency
-    float   rope_freq_scale         = 0.0f;     // RoPE frequency scaling factor
-    float   yarn_ext_factor         = -1.0f;    // YaRN extrapolation mix factor
-    float   yarn_attn_factor        = 1.0f;     // YaRN magnitude scaling factor
-    float   yarn_beta_fast          = 32.0f;    // YaRN low correction dim
-    float   yarn_beta_slow          = 1.0f;     // YaRN high correction dim
-    int yarn_orig_ctx           = 0;            // YaRN original context length
-    float   defrag_thold            = -1.0f;    // KV cache defragmentation threshold
-    int rope_scaling_type       = -1;
+    int main_gpu                    = 0;        // the GPU that is used for scratch and small tensors
+    float tensor_split[128]         = {0};      // how split tensors should be distributed across GPUs
+    int n_beams                     = 0;        // if non-zero then use beam search of given width.
+    int grp_attn_n                  = 1;        // group-attention factor
+    int grp_attn_w                  = 512;      // group-attention width
+    int n_print                     = -1;       // print token count every n tokens (-1 = disabled)
+    float rope_freq_base            = 0.0f;     // RoPE base frequency
+    float rope_freq_scale           = 0.0f;     // RoPE frequency scaling factor
+    float yarn_ext_factor           = -1.0f;    // YaRN extrapolation mix factor
+    float yarn_attn_factor          = 1.0f;     // YaRN magnitude scaling factor
+    float yarn_beta_fast            = 32.0f;    // YaRN low correction dim
+    float yarn_beta_slow            = 1.0f;     // YaRN high correction dim
+    int yarn_orig_ctx               = 0;        // YaRN original context length
+    float defrag_thold              = -1.0f;    // KV cache defragmentation threshold
+    int rope_scaling_type           = -1;
     char numa                       = 0;
 
     char *model                     = "";       // model path
@@ -102,39 +102,6 @@ struct gpt_c_params {
     char *image                     = "";       // path to an image file
 };
 
-struct maid_llm_params {
-   bool instruct;
-   bool interactive;
-   bool chatml;
-
-   char *path;
-   char *preprompt;
-   char *input_prefix;                    // string to prefix user inputs with
-   char *input_suffix;                    // string to suffix user inputs with
-
-   unsigned int seed;                     // RNG seed
-   int n_ctx;                             // context size
-   int n_batch;                           // batch size for prompt processing (must be >=32 to use BLAS)
-   int n_threads;                         // number of threads to use for processing
-   int n_predict;                         // new tokens to predict
-   int n_keep;                            // number of tokens to keep from initial prompt
-
-   int top_k;                             // <= 0 to use vocab size
-   float top_p;                           // 1.0 = disabled
-   float min_p;                           // 1.0 = disabled
-   float tfs_z;                           // 1.0 = disabled
-   float typical_p;                       // 1.0 = disabled
-   float temp;                            // 1.0 = disabled
-   int penalty_last_n;                    // last n tokens to penalize (0 = disable penalty, -1 = context size)
-   float penalty_repeat;                  // 1.0 = disabled
-   float penalty_freq;                    // 0.0 = disabled
-   float penalty_present;                 // 0.0 = disabled
-   int mirostat;                          // 0 = disabled, 1 = mirostat, 2 = mirostat 2.0
-   float mirostat_tau;                    // target entropy
-   float mirostat_eta;                    // learning rate
-   bool penalize_nl;             // consider newlines as a repeatable token
-};
-
 enum return_code {
    STOP,
    CONTINUE,
@@ -144,7 +111,7 @@ typedef void maid_logger(const char *buffer);
 
 typedef void maid_output_stream(unsigned char code, const char *buffer);
 
-int maid_llm_init(struct maid_llm_params *mparams, maid_logger *log_output);
+int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output);
 
 int maid_llm_prompt(const char *input, maid_output_stream *maid_output);
 
