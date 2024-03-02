@@ -519,6 +519,13 @@ class GptParams {
   }
 }
 
+/// An enumeration representing different types of LLM Prompt Formats.
+enum PromptFormat {
+  raw, 
+  chatml,
+  alpaca
+}
+
 enum SplitMode {
   none,
   layer,
