@@ -21,7 +21,7 @@ class maid_llm {
 
   int maid_llm_init(
     ffi.Pointer<gpt_c_params> c_params,
-    ffi.Pointer<maid_logger> log_output,
+    ffi.Pointer<dart_logger> log_output,
   ) {
     return _maid_llm_init(
       c_params,
@@ -32,26 +32,26 @@ class maid_llm {
   late final _maid_llm_initPtr = _lookup<
       ffi.NativeFunction<
           ffi.Int Function(ffi.Pointer<gpt_c_params>,
-              ffi.Pointer<maid_logger>)>>('maid_llm_init');
+              ffi.Pointer<dart_logger>)>>('maid_llm_init');
   late final _maid_llm_init = _maid_llm_initPtr.asFunction<
-      int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<maid_logger>)>();
+      int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
 
   int maid_llm_prompt(
     ffi.Pointer<ffi.Char> input,
-    ffi.Pointer<maid_output_stream> maid_output,
+    ffi.Pointer<dart_output> output,
   ) {
     return _maid_llm_prompt(
       input,
-      maid_output,
+      output,
     );
   }
 
   late final _maid_llm_promptPtr = _lookup<
       ffi.NativeFunction<
           ffi.Int Function(ffi.Pointer<ffi.Char>,
-              ffi.Pointer<maid_output_stream>)>>('maid_llm_prompt');
+              ffi.Pointer<dart_output>)>>('maid_llm_prompt');
   late final _maid_llm_prompt = _maid_llm_promptPtr.asFunction<
-      int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<maid_output_stream>)>();
+      int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<dart_output>)>();
 
   void maid_llm_stop() {
     return _maid_llm_stop();
@@ -306,14 +306,9 @@ final class gpt_c_params extends ffi.Struct {
   external ffi.Pointer<ffi.Char> image;
 }
 
-abstract class return_code {
-  static const int STOP = 0;
-  static const int CONTINUE = 1;
-}
-
-typedef maid_logger
+typedef dart_logger
     = ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Char> buffer)>;
-typedef maid_output_stream = ffi.NativeFunction<
-    ffi.Void Function(ffi.UnsignedChar code, ffi.Pointer<ffi.Char> buffer)>;
+typedef dart_output = ffi.NativeFunction<
+    ffi.Void Function(ffi.Pointer<ffi.Char> buffer, ffi.Bool stop)>;
 
 const int __bool_true_false_are_defined = 1;

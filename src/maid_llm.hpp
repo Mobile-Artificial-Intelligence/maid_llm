@@ -102,18 +102,13 @@ struct gpt_c_params {
     char *image;                                // path to an image file
 };
 
-enum return_code {
-   STOP,
-   CONTINUE,
-};
+typedef void dart_logger(const char *buffer);
 
-typedef void maid_logger(const char *buffer);
+typedef void dart_output(const char *buffer, bool stop);
 
-typedef void maid_output_stream(unsigned char code, const char *buffer);
+int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output);
-
-int maid_llm_prompt(const char *input, maid_output_stream *maid_output);
+int maid_llm_prompt(const char *input, dart_output *output);
 
 void maid_llm_stop(void);
 

@@ -38,7 +38,7 @@ static signed int prior;
 static gpt_params params;
 static llama_context_params lparams;
 
-static maid_logger *maid_logger_callback;
+static dart_logger *dart_logger_callback;
 
 static gpt_params from_c_params(struct gpt_c_params *c_params) {
     gpt_params cpp_params;
@@ -173,18 +173,18 @@ static gpt_params from_c_params(struct gpt_c_params *c_params) {
     return cpp_params;
 }
 
-static void maid_llm_log_callback(ggml_log_level level, const char * text, void * user_data) {
+static void dart_log_callback(ggml_log_level level, const char * text, void * user_data) {
     (void) level;
     (void) user_data;
-    maid_logger_callback(text);
+    dart_logger_callback(text);
 }
 
-int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output) {
+int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     llama_backend_init();
 
-    maid_logger_callback = log_output;
+    dart_logger_callback = log_output;
 
-    llama_log_set(maid_llm_log_callback, NULL);
+    llama_log_set(dart_log_callback, NULL);
 
     n_past       = 0;
     n_consumed   = 0;
@@ -235,7 +235,7 @@ int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output) {
     return 0;
 }
 
-int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {   
+int maid_llm_prompt(const char *input, dart_output *output) {   
     std::string buffer(input);
 
     bool is_interacting = false;
@@ -260,7 +260,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
     while (true) {
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
-            maid_output(return_code::STOP, "");
+            output("", true);
             return 0;  // or any other cleanup you want to do
         }
 
@@ -291,7 +291,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
 
         // display text
         for (auto id : embd) {
-            maid_output(return_code::CONTINUE, llama_token_to_piece(ctx, id).c_str());
+            output(llama_token_to_piece(ctx, id).c_str(), false);
         }
 
         // predict
@@ -370,7 +370,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
                         if (params.interactive) {
                             is_interacting = true;
                         }
-                        maid_output(return_code::STOP, "");
+                        output("", true);
                         return 0;
                     }
                 }
@@ -385,7 +385,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
                         // tokenize and inject first reverse prompt
                         const auto first_antiprompt = ::llama_tokenize(ctx, params.antiprompt.front(), false, true);
                         embd_inp.insert(embd_inp.end(), first_antiprompt.begin(), first_antiprompt.end());
-                        maid_output(return_code::STOP, "");
+                        output("", true);
                         return 0;
                     }
 
@@ -397,7 +397,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
             }
 
             if (n_past > 0 && is_interacting) {
-                maid_output(return_code::STOP, "");
+                output("", true);
                 return 0;
             }
 
@@ -417,7 +417,7 @@ int maid_llm_prompt(const char *input, maid_output_stream *maid_output) {
         }
     }
 
-    maid_output(return_code::STOP, "");
+    output("", true);
     return 0;
 }
 
