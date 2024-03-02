@@ -71,6 +71,72 @@ class maid_llm {
       _maid_llm_cleanupPtr.asFunction<void Function()>();
 }
 
+final class sampling_params extends ffi.Struct {
+  @ffi.Int()
+  external int n_prev;
+
+  @ffi.Int()
+  external int n_probs;
+
+  @ffi.Int()
+  external int min_keep;
+
+  @ffi.Int()
+  external int top_k;
+
+  @ffi.Float()
+  external double top_p;
+
+  @ffi.Float()
+  external double min_p;
+
+  @ffi.Float()
+  external double tfs_z;
+
+  @ffi.Float()
+  external double typical_p;
+
+  @ffi.Float()
+  external double temp;
+
+  @ffi.Float()
+  external double dynatemp_range;
+
+  @ffi.Float()
+  external double dynatemp_exponent;
+
+  @ffi.Int()
+  external int penalty_last_n;
+
+  @ffi.Float()
+  external double penalty_repeat;
+
+  @ffi.Float()
+  external double penalty_freq;
+
+  @ffi.Float()
+  external double penalty_present;
+
+  @ffi.Int()
+  external int mirostat;
+
+  @ffi.Float()
+  external double mirostat_tau;
+
+  @ffi.Float()
+  external double mirostat_eta;
+
+  @ffi.Bool()
+  external bool penalize_nl;
+
+  external ffi.Pointer<ffi.Char> grammar;
+
+  external ffi.Pointer<ffi.Char> cfg_negative_prompt;
+
+  @ffi.Float()
+  external double cfg_scale;
+}
+
 final class gpt_c_params extends ffi.Struct {
   @ffi.Int()
   external int seed;
@@ -173,6 +239,8 @@ final class gpt_c_params extends ffi.Struct {
 
   @ffi.Char()
   external int numa;
+
+  external sampling_params sparams;
 
   external ffi.Pointer<ffi.Char> model;
 

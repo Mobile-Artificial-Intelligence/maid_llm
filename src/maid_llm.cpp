@@ -46,6 +46,35 @@ static llama_context_params lparams;
 
 static dart_logger *dart_logger_callback;
 
+static llama_sampling_params from_c_sampling_params(struct sampling_params c_params) {
+    llama_sampling_params cpp_params;
+
+    cpp_params.n_prev = c_params.n_prev;
+    cpp_params.n_probs = c_params.n_probs;
+    cpp_params.min_keep = c_params.min_keep;
+    cpp_params.top_k = c_params.top_k;
+    cpp_params.top_p = c_params.top_p;
+    cpp_params.min_p = c_params.min_p;
+    cpp_params.tfs_z = c_params.tfs_z;
+    cpp_params.typical_p = c_params.typical_p;
+    cpp_params.temp = c_params.temp;
+    cpp_params.dynatemp_range = c_params.dynatemp_range;
+    cpp_params.dynatemp_exponent = c_params.dynatemp_exponent;
+    cpp_params.penalty_last_n = c_params.penalty_last_n;
+    cpp_params.penalty_repeat = c_params.penalty_repeat;
+    cpp_params.penalty_freq = c_params.penalty_freq;
+    cpp_params.penalty_present = c_params.penalty_present;
+    cpp_params.mirostat = c_params.mirostat;
+    cpp_params.mirostat_tau = c_params.mirostat_tau;
+    cpp_params.mirostat_eta = c_params.mirostat_eta;
+    cpp_params.penalize_nl = c_params.penalize_nl;
+    cpp_params.grammar = c_params.grammar;
+    cpp_params.cfg_negative_prompt = c_params.cfg_negative_prompt;
+    cpp_params.cfg_scale = c_params.cfg_scale;
+
+    return cpp_params;
+}
+
 static gpt_params from_c_params(struct gpt_c_params c_params) {
     gpt_params cpp_params;
 
@@ -114,6 +143,8 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
             cpp_params.numa = GGML_NUMA_STRATEGY_COUNT;
             break;
     };
+
+    cpp_params.sparams = from_c_sampling_params(c_params.sparams);
 
     cpp_params.model                    = c_params.model;
     cpp_params.model_draft              = c_params.model_draft;

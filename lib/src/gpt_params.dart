@@ -5,6 +5,8 @@ import 'bindings.dart';
 
 import 'package:ffi/ffi.dart';
 
+import 'sampling_params.dart';
+
 class GptParams {
   /// Seed for random number generation. Defaults to a random integer.
   /// A value of -1 indicates a random seed should be used.
@@ -108,6 +110,9 @@ class GptParams {
 
   /// NUMA strategy. Defaults to GgmlNumaStrategy.disabled.
   GgmlNumaStrategy numa = GgmlNumaStrategy.disabled;
+
+  /// Sampling parameters.
+  SamplingParams sparams = SamplingParams();
 
   /// Model path.
   String model = '';
@@ -292,6 +297,7 @@ class GptParams {
     gpt.ref.defrag_thold = defragThold;
     gpt.ref.rope_scaling_type = ropeScalingType;
     gpt.ref.numa = numa.index;
+    gpt.ref.sparams = sparams.get();
     gpt.ref.model = model.toNativeUtf8().cast<Char>();
     gpt.ref.model_draft = modelDraft.toNativeUtf8().cast<Char>();
     gpt.ref.model_alias = modelAlias.toNativeUtf8().cast<Char>();
