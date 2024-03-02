@@ -177,9 +177,6 @@ class GptParams {
   /// Compute KL-divergence.
   bool klDivergence = false;
 
-  /// If true, use mul_mat_q kernels instead of cuBLAS.
-  bool mulMatQ = true;
-
   /// Do not randomize prompt if none provided.
   bool randomPrompt = false;
 
@@ -319,7 +316,6 @@ class GptParams {
     gpt.ref.multiple_choice = multipleChoice;
     gpt.ref.multiple_choice_tasks = multipleChoiceTasks;
     gpt.ref.kl_divergence = klDivergence;
-    gpt.ref.mul_mat_q = mulMatQ;
     gpt.ref.random_prompt = randomPrompt;
     gpt.ref.use_color = useColor;
     gpt.ref.interactive = interactive;
@@ -406,7 +402,6 @@ class GptParams {
     multipleChoice = json['multipleChoice'] ?? multipleChoice;
     multipleChoiceTasks = json['multipleChoiceTasks'] ?? multipleChoiceTasks;
     klDivergence = json['klDivergence'] ?? klDivergence;
-    mulMatQ = json['mulMatQ'] ?? mulMatQ;
     randomPrompt = json['randomPrompt'] ?? randomPrompt;
     useColor = json['useColor'] ?? useColor;
     interactive = json['interactive'] ?? interactive;
@@ -493,7 +488,6 @@ class GptParams {
       'multipleChoice': multipleChoice,
       'multipleChoiceTasks': multipleChoiceTasks,
       'klDivergence': klDivergence,
-      'mulMatQ': mulMatQ,
       'randomPrompt': randomPrompt,
       'useColor': useColor,
       'interactive': interactive,

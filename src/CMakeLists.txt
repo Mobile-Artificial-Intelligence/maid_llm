@@ -1,9 +1,6 @@
-# The Flutter tooling requires that developers have CMake 3.10 or later
-# installed. You should not increase this version, as doing so will cause
-# the plugin to fail to compile for some customers of the plugin.
 cmake_minimum_required(VERSION 3.10)
 
-project(maid_llm_library VERSION 0.0.1 LANGUAGES CPP)
+project(maid_llm_library VERSION 0.0.1 LANGUAGES CXX)
 
 set(BUILD_SHARED_LIBS ON)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -16,15 +13,23 @@ endif()
 #set(LLAMA_STATIC ON CACHE BOOL "llama: enable static link libraries" FORCE)
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
 
-add_subdirectory(./llama.cpp)
+add_subdirectory(./llama_cpp)
 
 add_library(maid_llm SHARED
-  "maid_llm.cpp"
+  maid_llm.cpp
 )
+
+# Add this line to include the llama_cpp directory
+target_include_directories(maid_llm PRIVATE 
+  ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp/common
+)
+
+target_link_libraries(maid_llm llama common)
 
 set_target_properties(maid_llm PROPERTIES
   PUBLIC_HEADER maid_llm.hpp
-  OUTPUT_NAME "maid_llm"
+  OUTPUT_NAME "maid"
 )
 
 target_compile_definitions(maid_llm PUBLIC DART_SHARED_LIB)

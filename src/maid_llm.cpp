@@ -174,7 +174,6 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
 
     cpp_params.kl_divergence            = c_params.kl_divergence;
 
-    cpp_params.mul_mat_q                = c_params.mul_mat_q;
     cpp_params.random_prompt            = c_params.random_prompt;
     cpp_params.use_color                = c_params.use_color;
     cpp_params.interactive              = c_params.interactive;
@@ -240,10 +239,8 @@ int maid_llm_init(struct gpt_c_params c_params, dart_logger *log_output) {
 
     std::tie(model, ctx) = llama_init_from_gpt_params(params);
     if (model == NULL) {
-        fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model);
         return 1;
     } else if (ctx == NULL) {
-        fprintf(stderr, "%s: error: failed to create context with model '%s'\n", __func__, params.model);
         llama_free_model(model);
         return 1;
     }
