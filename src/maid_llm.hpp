@@ -40,18 +40,18 @@ struct gpt_c_params {
     int rope_scaling_type           = -1;
     char numa                       = 0;
 
-    char *model                     = "";       // model path
-    char *model_draft               = "";       // draft model for speculative decoding
-    char *model_alias               = "unknown";// model alias
-    char *prompt                    = "";
-    char *prompt_file               = "";       // store the external prompt file name
-    char *path_prompt_cache         = "";       // path to file for saving/loading prompt eval state
-    char *input_prefix              = "";       // string to prefix user inputs with
-    char *input_suffix              = "";       // string to suffix user inputs with
+    char *model;                                // model path
+    char *model_draft;                          // draft model for speculative decoding
+    char *model_alias;                          // model alias
+    char *prompt;
+    char *prompt_file;                          // store the external prompt file name
+    char *path_prompt_cache;                    // path to file for saving/loading prompt eval state
+    char *input_prefix;                         // string to prefix user inputs with
+    char *input_suffix;                         // string to suffix user inputs with
     char *antiprompt;                           // string upon seeing which more user input is prompted
-    char *logdir                    = "";       // directory in which to save YAML log files
-    char *logits_file               = "";       // file for saving *all* logits
-    char *lora_base                 = "";       // base model path for the lora adapter
+    char *logdir;                               // directory in which to save YAML log files
+    char *logits_file;                          // file for saving *all* logits
+    char *lora_base;                            // base model path for the lora adapter
 
     int  ppl_stride                 = 0;        // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
     int  ppl_output_type            = 0;        // = 0 -> ppl output is as usual, = 1 -> ppl output is num_tokens, ppl, one per line
@@ -94,12 +94,12 @@ struct gpt_c_params {
     bool dump_kv_cache              = false;    // dump the KV cache contents for debugging purposes
     bool no_kv_offload              = false;    // disable KV offloading
 
-    char *cache_type_k              = "f16";    // KV cache data type for the K
-    char *cache_type_v              = "f16";    // KV cache data type for the V
+    char *cache_type_k;                         // KV cache data type for the K
+    char *cache_type_v;                         // KV cache data type for the V
 
     // multimodal models (see examples/llava)
-    char *mmproj                    = "";       // path to multimodal projector
-    char *image                     = "";       // path to an image file
+    char *mmproj;                               // path to multimodal projector
+    char *image;                                // path to an image file
 };
 
 enum return_code {

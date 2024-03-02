@@ -139,6 +139,36 @@ static gpt_params from_c_params(struct gpt_c_params *c_params) {
 
     cpp_params.mul_mat_q                = c_params->mul_mat_q;
     cpp_params.random_prompt            = c_params->random_prompt;
+    cpp_params.use_color                = c_params->use_color;
+    cpp_params.interactive              = c_params->interactive;
+    cpp_params.chatml                   = c_params->chatml;
+    cpp_params.prompt_cache_all         = c_params->prompt_cache_all;
+    cpp_params.prompt_cache_ro          = c_params->prompt_cache_ro;
+
+    cpp_params.embedding                = c_params->embedding;
+    cpp_params.escape                   = c_params->escape;
+    cpp_params.interactive_first        = c_params->interactive_first;
+    cpp_params.multiline_input          = c_params->multiline_input;
+    cpp_params.simple_io                = c_params->simple_io;
+    cpp_params.cont_batching            = c_params->cont_batching;
+
+    cpp_params.input_prefix_bos         = c_params->input_prefix_bos;
+    cpp_params.ignore_eos               = c_params->ignore_eos;
+    cpp_params.instruct                 = c_params->instruct;
+    cpp_params.logits_all               = c_params->logits_all;
+    cpp_params.use_mmap                 = c_params->use_mmap;
+    cpp_params.use_mlock                = c_params->use_mlock;
+    cpp_params.verbose_prompt           = c_params->verbose_prompt;
+    cpp_params.display_prompt           = c_params->display_prompt;
+    cpp_params.infill                   = c_params->infill;
+    cpp_params.dump_kv_cache            = c_params->dump_kv_cache;
+    cpp_params.no_kv_offload            = c_params->no_kv_offload;
+
+    cpp_params.cache_type_k             = c_params->cache_type_k;
+    cpp_params.cache_type_v             = c_params->cache_type_v;
+
+    cpp_params.mmproj                   = c_params->mmproj;
+    cpp_params.image                    = c_params->image;
 
     return cpp_params;
 }
@@ -159,48 +189,17 @@ int maid_llm_init(struct gpt_c_params *c_params, maid_logger *log_output) {
     n_past       = 0;
     n_consumed   = 0;
 
-    params.instruct                 = (*mparams).instruct;
-    params.chatml                   = (*mparams).chatml;
-    params.interactive              = (*mparams).interactive;
+    params = from_c_params(c_params);
 
-    params.seed                     = (*mparams).seed              ? (*mparams).seed              : -1;
-    params.n_ctx                    = (*mparams).n_ctx             ? (*mparams).n_ctx             : 512;
-    params.n_batch                  = (*mparams).n_batch           ? (*mparams).n_batch           : 8;
-    params.n_threads                = (*mparams).n_threads         ? (*mparams).n_threads         : get_num_physical_cores();
-    params.n_predict                = (*mparams).n_predict         ? (*mparams).n_predict         : 256;
-    params.n_keep                   = (*mparams).n_keep            ? (*mparams).n_keep            : 48;
-
-    params.sparams.top_k            = (*mparams).top_k             ? (*mparams).top_k             : 40;
-    params.sparams.top_p            = (*mparams).top_p             ? (*mparams).top_p             : 0.95f;
-    params.sparams.min_p            = (*mparams).min_p             ? (*mparams).min_p             : 0.1f;
-    params.sparams.tfs_z            = (*mparams).tfs_z             ? (*mparams).tfs_z             : 1.00f;
-    params.sparams.typical_p        = (*mparams).typical_p         ? (*mparams).typical_p         : 1.00f;
-    params.sparams.temp             = (*mparams).temp              ? (*mparams).temp              : 0.80f;
-    params.sparams.penalty_last_n   = (*mparams).penalty_last_n    ? (*mparams).penalty_last_n    : 64;
-    params.sparams.penalty_repeat   = (*mparams).penalty_repeat    ? (*mparams).penalty_repeat    : 1.10f;
-    params.sparams.penalty_freq     = (*mparams).penalty_freq      ? (*mparams).penalty_freq      : 0.00f;
-    params.sparams.penalty_present  = (*mparams).penalty_present   ? (*mparams).penalty_present   : 0.00f;
-    params.sparams.mirostat         = (*mparams).mirostat          ? (*mparams).mirostat          : 0;
-    params.sparams.mirostat_tau     = (*mparams).mirostat_tau      ? (*mparams).mirostat_tau      : 5.00f;
-    params.sparams.mirostat_eta     = (*mparams).mirostat_eta      ? (*mparams).mirostat_eta      : 0.10f;
-    params.sparams.penalize_nl      = (*mparams).penalize_nl;
-
-    params.model                    = (*mparams).path;
-    params.prompt                   = (*mparams).preprompt;
-    params.input_prefix             = (*mparams).input_prefix;
-    params.input_suffix             = (*mparams).input_suffix;
-
-    params.antiprompt.push_back((*mparams).input_prefix);
-    params.antiprompt.push_back("\n\n\n\n");
 
     n_remain = params.n_predict;
 
     std::tie(model, ctx) = llama_init_from_gpt_params(params);
     if (model == NULL) {
-        fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, (*mparams).path);
+        fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model);
         return 1;
     } else if (ctx == NULL) {
-        fprintf(stderr, "%s: error: failed to create context with model '%s'\n", __func__, (*mparams).path);
+        fprintf(stderr, "%s: error: failed to create context with model '%s'\n", __func__, params.model);
         llama_free_model(model);
         return 1;
     }
