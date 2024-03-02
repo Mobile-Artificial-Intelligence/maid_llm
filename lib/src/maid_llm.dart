@@ -77,4 +77,12 @@ class MaidLLM {
       _log!(message.cast<Utf8>().toDartString());
     }
   }
+
+  static void stop() {
+    lib.maid_llm_stop();
+  }
+  
+  static void clear() {
+    lib.maid_llm_cleanup();
+  }
 }
