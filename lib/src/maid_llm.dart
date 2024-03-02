@@ -37,7 +37,7 @@ class MaidLLM {
     lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
   }
 
-  static Stream<String> prompt(String input) async* {
+  Stream<String> prompt(String input) async* {
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
@@ -78,11 +78,11 @@ class MaidLLM {
     }
   }
 
-  static void stop() {
+  void stop() {
     lib.maid_llm_stop();
   }
   
-  static void clear() {
+  void clear() {
     lib.maid_llm_cleanup();
   }
 }
