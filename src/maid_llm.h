@@ -7,6 +7,12 @@ extern "C" {
 
 #include <stdbool.h>
 
+enum chat_role {
+    ROLE_SYSTEM,
+    ROLE_USER,
+    ROLE_ASSISTANT
+};
+
 // sampling parameters
 struct sampling_params {
     int         n_prev;                             // number of previous tokens to remember
@@ -132,10 +138,14 @@ struct gpt_c_params {
     char *image;                                    // path to an image file
 };
 
+struct chat_message {
+    chat_role role;
+    char *content;
+};
+
 typedef void dart_logger(const char *buffer);
 
 typedef void dart_output(const char *buffer, bool stop);
-
 
 int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
