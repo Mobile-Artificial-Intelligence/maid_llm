@@ -66,9 +66,6 @@ class GptParams {
   /// The GPU that is used for scratch and small tensors. Defaults to 0.
   int mainGpu = 0;
 
-  /// How split tensors should be distributed across GPUs. Defaults to an empty list.
-  List<double> tensorSplit = [];
-
   /// If non-zero then use beam search of given width. Defaults to 0.
   int nBeams = 0;
 
@@ -279,7 +276,6 @@ class GptParams {
     gpt.ref.n_gpu_layers_draft = nGpuLayersDraft;
     gpt.ref.split_mode = splitMode.index;
     gpt.ref.main_gpu = mainGpu;
-    gpt.ref.tensor_split = (tensorSplit.isEmpty ? nullptr : tensorSplit.join().toNativeUtf8()) as Array<Float>;
     gpt.ref.n_beams = nBeams;
     gpt.ref.grp_attn_n = grpAttnN;
     gpt.ref.grp_attn_w = grpAttnW;
@@ -366,7 +362,6 @@ class GptParams {
     nGpuLayersDraft = json['nGpuLayersDraft'] ?? nGpuLayersDraft;
     splitMode = json['splitMode'] != null ? SplitMode.values[json['splitMode']] : splitMode;
     mainGpu = json['mainGpu'] ?? mainGpu;
-    tensorSplit = json['tensorSplit'] ?? tensorSplit;
     nBeams = json['nBeams'] ?? nBeams;
     grpAttnN = json['grpAttnN'] ?? grpAttnN;
     grpAttnW = json['grpAttnW'] ?? grpAttnW;
@@ -452,7 +447,6 @@ class GptParams {
       'nGpuLayersDraft': nGpuLayersDraft,
       'splitMode': splitMode.index,
       'mainGpu': mainGpu,
-      'tensorSplit': tensorSplit,
       'nBeams': nBeams,
       'grpAttnN': grpAttnN,
       'grpAttnW': grpAttnW,

@@ -3,6 +3,12 @@
 
 #include <stdbool.h>
 
+#ifdef WIN32
+   #define EXPORT __declspec(dllexport)
+#else
+   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#endif
+
 // sampling parameters
 struct sampling_params {
     int         n_prev                = 64;         // number of previous tokens to remember
@@ -50,7 +56,6 @@ struct gpt_c_params {
     int n_gpu_layers_draft          = -1;           // number of layers to store in VRAM for the draft model (-1 - use default)
     char split_mode                 = 1;            // how to split the model across GPUs
     int main_gpu                    = 0;            // the GPU that is used for scratch and small tensors
-    float tensor_split[128]         = {0};          // how split tensors should be distributed across GPUs
     int n_beams                     = 0;            // if non-zero then use beam search of given width.
     int grp_attn_n                  = 1;            // group-attention factor
     int grp_attn_w                  = 512;          // group-attention width
@@ -133,12 +138,12 @@ typedef void dart_logger(const char *buffer);
 
 typedef void dart_output(const char *buffer, bool stop);
 
-int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
+EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-int maid_llm_prompt(const char *input, dart_output *output);
+EXPORT int maid_llm_prompt(const char *input, dart_output *output);
 
-void maid_llm_stop(void);
+EXPORT void maid_llm_stop(void);
 
-void maid_llm_cleanup(void);
+EXPORT void maid_llm_cleanup(void);
 
 #endif
