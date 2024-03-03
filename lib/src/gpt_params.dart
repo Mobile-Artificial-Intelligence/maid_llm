@@ -136,7 +136,7 @@ class GptParams {
   String inputSuffix = '';
 
   /// String upon seeing which more user input is prompted.
-  String antiprompt = '<STOP>'; // Temporarily set to <STOP> for testing.
+  String antiprompt = '';
 
   /// Directory in which to save YAML log files.
   String logdir = '';

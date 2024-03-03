@@ -155,7 +155,9 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     cpp_params.input_prefix             = c_params.input_prefix;
     cpp_params.input_suffix             = c_params.input_suffix;
     
-    cpp_params.antiprompt.push_back(c_params.antiprompt);
+    if (strcmp(c_params.antiprompt, "") != 0) {
+        cpp_params.antiprompt.push_back(c_params.antiprompt);
+    }
 
     cpp_params.logdir                   = c_params.logdir;
     cpp_params.logits_file              = c_params.logits_file;
