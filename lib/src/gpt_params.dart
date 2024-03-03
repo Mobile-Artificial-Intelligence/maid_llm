@@ -136,7 +136,7 @@ class GptParams {
   String inputSuffix = '';
 
   /// String upon seeing which more user input is prompted.
-  String antiprompt = '';
+  String antiprompt = '<STOP>'; // Temporarily set to <STOP> for testing.
 
   /// Directory in which to save YAML log files.
   String logdir = '';
@@ -244,10 +244,10 @@ class GptParams {
   bool noKvOffload = false;
 
   /// KV cache data type for the K.
-  String cacheTypeK = '';
+  String cacheTypeK = 'f16';
   
   /// KV cache data type for the V.
-  String cacheTypeV = '';
+  String cacheTypeV = 'f16';
 
   /// Path to multimodal projector.
   String mmproj = '';
