@@ -213,6 +213,68 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
+void parse_messages(chat_message* messages[]) {
+    std::vector<llama_token> inp_pfx;
+    std::vector<llama_token> res_pfx;
+    std::vector<llama_token> sfx;
+
+    if (params.instruct) {
+        // prefixes & suffix for instruct mode
+        inp_pfx = ::llama_tokenize(ctx, "### Instruction:\n\n",   add_bos, true);
+        res_pfx = ::llama_tokenize(ctx, "### Response:\n\n",        false, true);
+        sfx     = ::llama_tokenize(ctx, "\n\n",                     false, true);
+    } else if (params.chatml) {
+        // prefixes & suffix for chatml mode
+        inp_pfx = ::llama_tokenize(ctx, "<|im_start|>user\n",     add_bos, true);
+        res_pfx = ::llama_tokenize(ctx, "<|im_start|>assistant\n",  false, true);
+        sfx     = ::llama_tokenize(ctx, "<|im_end|>\n",             false, true);
+    }
+
+    const auto line_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
+    const auto line_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
+
+    int length = sizeof(messages) / sizeof(messages[0]);
+    for (int i = 0; i < length; i++) {
+        chat_message* message = messages[i];
+        std::string buffer(message->content);
+
+        // Add tokens to embd only if the input buffer is non-empty
+        // Entering a empty line lets the user pass control back
+        if (buffer.length() > 1) {
+            if (message->role == ROLE_USER) {
+                // insert user chat prefix
+                if (params.instruct || params.chatml) {
+                    n_consumed = embd_inp.size();
+                    embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
+                }
+
+                embd_inp.insert(embd_inp.end(), line_pfx.begin(), line_pfx.end());
+            } else if (message->role == ROLE_ASSISTANT) {
+                // insert assistant chat prefix
+                if (params.instruct || params.chatml) {
+                    embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
+                }
+            }
+
+            if (params.escape) {
+                process_escapes(buffer);
+            }            
+            const auto line_inp = ::llama_tokenize(ctx, buffer,              false, false);
+            
+            embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
+
+            if (message->role == ROLE_USER) {
+                embd_inp.insert(embd_inp.end(), line_sfx.begin(), line_sfx.end());
+            }
+        }
+    }
+
+    // insert response prefix
+    if (params.instruct || params.chatml) {
+        embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
+    }
+}
+
 static void dart_log_callback(ggml_log_level level, const char * text, void * user_data) {
     (void) level;
     (void) user_data;
@@ -303,9 +365,7 @@ int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     return 0;
 }
 
-int maid_llm_prompt(const char *input, dart_output *output) {   
-    std::string buffer(input);
-
+int maid_llm_prompt(struct chat_message* messages[], dart_output *output) {   
     bool is_antiprompt = false;
     bool is_interacting = false;
 
@@ -319,53 +379,8 @@ int maid_llm_prompt(const char *input, dart_output *output) {
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
 
-    // prefix & suffix for instruct mode
-    const auto inp_pfx = ::llama_tokenize(ctx, "\n\n### Instruction:\n\n", add_bos, true);
-    const auto inp_sfx = ::llama_tokenize(ctx, "\n\n### Response:\n\n",    false,   true);
-
-    // chatml prefix & suffix
-    const auto cml_pfx = ::llama_tokenize(ctx, "\n<|im_start|>user\n", add_bos, true);
-    const auto cml_sfx = ::llama_tokenize(ctx, "<|im_end|>\n<|im_start|>assistant\n", false, true);
-
-
-    // Add tokens to embd only if the input buffer is non-empty
-    // Entering a empty line lets the user pass control back
-    if (buffer.length() > 1) {
-        const size_t original_size = embd_inp.size();
-
-        // instruct mode: insert instruction prefix
-        if (params.instruct) {
-            n_consumed = embd_inp.size();
-            embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
-        }
-        // chatml mode: insert user chat prefix
-        if (params.chatml) {
-            n_consumed = embd_inp.size();
-            embd_inp.insert(embd_inp.end(), cml_pfx.begin(), cml_pfx.end());
-        }
-        if (params.escape) {
-            process_escapes(buffer);
-        }
-
-        const auto line_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
-        const auto line_inp = ::llama_tokenize(ctx, buffer,              false, false);
-        const auto line_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
-
-        embd_inp.insert(embd_inp.end(), line_pfx.begin(), line_pfx.end());
-        embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
-        embd_inp.insert(embd_inp.end(), line_sfx.begin(), line_sfx.end());
-
-        // instruct mode: insert response suffix
-        if (params.instruct) {
-            embd_inp.insert(embd_inp.end(), inp_sfx.begin(), inp_sfx.end());
-        }
-        // chatml mode: insert assistant chat suffix
-        if (params.chatml) {
-            embd_inp.insert(embd_inp.end(), cml_sfx.begin(), cml_sfx.end());
-        }
-
-        n_remain -= line_inp.size();
-    }
+    // parse messages
+    parse_messages(messages);
 
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {

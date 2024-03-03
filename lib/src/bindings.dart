@@ -37,21 +37,22 @@ class maid_llm {
       int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
 
   int maid_llm_prompt(
-    ffi.Pointer<ffi.Char> input,
+    ffi.Pointer<ffi.Pointer<chat_message>> messages,
     ffi.Pointer<dart_output> output,
   ) {
     return _maid_llm_prompt(
-      input,
+      messages,
       output,
     );
   }
 
   late final _maid_llm_promptPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int Function(ffi.Pointer<ffi.Char>,
+          ffi.Int Function(ffi.Pointer<ffi.Pointer<chat_message>>,
               ffi.Pointer<dart_output>)>>('maid_llm_prompt');
   late final _maid_llm_prompt = _maid_llm_promptPtr.asFunction<
-      int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<dart_output>)>();
+      int Function(
+          ffi.Pointer<ffi.Pointer<chat_message>>, ffi.Pointer<dart_output>)>();
 
   void maid_llm_stop() {
     return _maid_llm_stop();
@@ -69,6 +70,12 @@ class maid_llm {
       _lookup<ffi.NativeFunction<ffi.Void Function()>>('maid_llm_cleanup');
   late final _maid_llm_cleanup =
       _maid_llm_cleanupPtr.asFunction<void Function()>();
+}
+
+abstract class chat_role {
+  static const int ROLE_SYSTEM = 0;
+  static const int ROLE_USER = 1;
+  static const int ROLE_ASSISTANT = 2;
 }
 
 final class sampling_params extends ffi.Struct {
@@ -366,6 +373,13 @@ final class gpt_c_params extends ffi.Struct {
   external ffi.Pointer<ffi.Char> mmproj;
 
   external ffi.Pointer<ffi.Char> image;
+}
+
+final class chat_message extends ffi.Struct {
+  @ffi.Int32()
+  external int role;
+
+  external ffi.Pointer<ffi.Char> content;
 }
 
 typedef dart_logger

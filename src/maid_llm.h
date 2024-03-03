@@ -139,7 +139,7 @@ struct gpt_c_params {
 };
 
 struct chat_message {
-    chat_role role;
+    enum chat_role role;
     char *content;
 };
 
@@ -149,7 +149,7 @@ typedef void dart_output(const char *buffer, bool stop);
 
 int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-int maid_llm_prompt(const char *input, dart_output *output);
+int maid_llm_prompt(struct chat_message* messages[], dart_output *output);
 
 void maid_llm_stop(void);
 
