@@ -215,12 +215,12 @@ static void dart_log_callback(ggml_log_level level, const char * text, void * us
     dart_logger_callback(text);
 }
 
-int maid_llm_init(struct gpt_c_params c_params, dart_logger *log_output) {
+int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     dart_logger_callback = log_output;
 
     llama_log_set(dart_log_callback, NULL);
 
-    params = from_c_params(c_params);
+    params = from_c_params(*c_params);
 
     std::mt19937 rng(params.seed);
     if (params.random_prompt) {
