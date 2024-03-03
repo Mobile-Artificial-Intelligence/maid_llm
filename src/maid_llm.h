@@ -1,13 +1,11 @@
 #ifndef _MAID_LLM_H
 #define _MAID_LLM_H
 
-#include <stdbool.h>
-
-#ifdef WIN32
-   #define EXPORT __declspec(dllexport)
-#else
-   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#include <stdbool.h>
 
 // sampling parameters
 struct sampling_params {
@@ -138,20 +136,15 @@ typedef void dart_logger(const char *buffer);
 
 typedef void dart_output(const char *buffer, bool stop);
 
-// Comment out when using ffigen
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
+int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-EXPORT int maid_llm_prompt(const char *input, dart_output *output);
+int maid_llm_prompt(const char *input, dart_output *output);
 
-EXPORT void maid_llm_stop(void);
+void maid_llm_stop(void);
 
-EXPORT void maid_llm_cleanup(void);
+void maid_llm_cleanup(void);
 
-// Comment out when using ffigen
 #ifdef __cplusplus
 }
 #endif
