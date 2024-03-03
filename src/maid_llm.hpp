@@ -35,6 +35,7 @@ struct sampling_params {
     float       cfg_scale     = 1.f;                // how strong is guidance
 };
 
+// llama.cpp gpt_c_params
 struct gpt_c_params {
     signed int seed                 = -1;           // RNG seed
 
@@ -138,6 +139,11 @@ typedef void dart_logger(const char *buffer);
 
 typedef void dart_output(const char *buffer, bool stop);
 
+// Comment out when using ffigen
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
 EXPORT int maid_llm_prompt(const char *input, dart_output *output);
@@ -145,5 +151,10 @@ EXPORT int maid_llm_prompt(const char *input, dart_output *output);
 EXPORT void maid_llm_stop(void);
 
 EXPORT void maid_llm_cleanup(void);
+
+// Comment out when using ffigen
+#ifdef __cplusplus
+}
+#endif
 
 #endif
