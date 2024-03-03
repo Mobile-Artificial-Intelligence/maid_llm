@@ -37,7 +37,7 @@ static int n_past_guidance;
 
 static int n_remain;
 static int n_past;
-static int n_consumed;
+static int n_consumed; // number of tokens consumed by sampling
 
 static bool add_bos;
 
@@ -298,7 +298,6 @@ int maid_llm_prompt(const char *input, dart_output *output) {
 
     bool is_antiprompt = false;
     bool is_interacting = false;
-    bool suffix_found = false;
 
     const int ga_n = params.grp_attn_n;
     const int ga_w = params.grp_attn_w;
@@ -497,9 +496,11 @@ int maid_llm_prompt(const char *input, dart_output *output) {
             }
         }
 
-        // display text
-        for (auto id : embd) {
-            output(llama_token_to_piece(ctx, id).c_str(), false);
+        if (n_past >= (int) embd_inp.size() - 1) {
+            // display text
+            for (auto id : embd) {
+                output(llama_token_to_piece(ctx, id).c_str(), false);
+            }
         }
 
         // if not currently processing queued inputs;
