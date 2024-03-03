@@ -26,7 +26,7 @@ ffigen:
   ignore-source-errors: true
   headers:
     entry-points:
-      - 'src/maid_llm.hpp'
+      - 'src/maid_llm.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
 

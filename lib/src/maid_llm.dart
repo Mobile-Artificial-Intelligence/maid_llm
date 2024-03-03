@@ -21,7 +21,7 @@ class MaidLLM {
       if (Platform.isWindows) {
         _lib = maid_llm(DynamicLibrary.open('bin/maid.dll'));
       } else if (Platform.isLinux || Platform.isAndroid) {
-        _lib = maid_llm(DynamicLibrary.open('lib/libmaid.so'));
+        _lib = maid_llm(DynamicLibrary.open('libmaid.so'));
       } else if (Platform.isMacOS || Platform.isIOS) {
         throw Exception('Unsupported platform');
         //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));

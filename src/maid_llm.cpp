@@ -1,4 +1,4 @@
-#include "maid_llm.hpp"
+#include "maid_llm.h"
 #include "llama.h"
 #include "ggml.h"
 #include "common.h"

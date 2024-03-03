@@ -374,3 +374,7 @@ typedef dart_output = ffi.NativeFunction<
     ffi.Void Function(ffi.Pointer<ffi.Char> buffer, ffi.Bool stop)>;
 
 const int __bool_true_false_are_defined = 1;
+
+const int true1 = 1;
+
+const int false1 = 0;

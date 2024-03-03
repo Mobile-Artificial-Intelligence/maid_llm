@@ -28,7 +28,7 @@ target_include_directories(maid_llm PRIVATE
 target_link_libraries(maid_llm llama common)
 
 set_target_properties(maid_llm PROPERTIES
-  PUBLIC_HEADER maid_llm.hpp
+  PUBLIC_HEADER maid_llm.h
   OUTPUT_NAME "maid"
 )
 
