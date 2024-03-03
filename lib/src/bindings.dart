@@ -195,9 +195,6 @@ final class gpt_c_params extends ffi.Struct {
   @ffi.Int()
   external int main_gpu;
 
-  @ffi.Array.multi([128])
-  external ffi.Array<ffi.Float> tensor_split;
-
   @ffi.Int()
   external int n_beams;
 
@@ -292,9 +289,6 @@ final class gpt_c_params extends ffi.Struct {
 
   @ffi.Bool()
   external bool kl_divergence;
-
-  @ffi.Bool()
-  external bool mul_mat_q;
 
   @ffi.Bool()
   external bool random_prompt;
