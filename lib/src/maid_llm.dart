@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
-import 'package:maid_llm/src/gpt_params.dart';
+import 'gpt_params.dart';
 
 import 'bindings.dart';
 
