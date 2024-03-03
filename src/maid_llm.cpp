@@ -290,6 +290,16 @@ int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
         params.n_keep += add_bos; // always keep the BOS token
     }
 
+    if (params.instruct) {
+        // instruct mode: insert instruction prefix to antiprompts
+        params.antiprompt.push_back("\n\n### Instruction:\n\n");
+    }
+
+    if (params.chatml) {
+        // chatml mode: insert user chat prefix to antiprompts
+        params.antiprompt.push_back("\n<|im_start|>user\n");
+    }
+
     return 0;
 }
 
@@ -324,12 +334,12 @@ int maid_llm_prompt(const char *input, dart_output *output) {
         const size_t original_size = embd_inp.size();
 
         // instruct mode: insert instruction prefix
-        if (params.instruct && !is_antiprompt) {
+        if (params.instruct) {
             n_consumed = embd_inp.size();
             embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
         }
         // chatml mode: insert user chat prefix
-        if (params.chatml && !is_antiprompt) {
+        if (params.chatml) {
             n_consumed = embd_inp.size();
             embd_inp.insert(embd_inp.end(), cml_pfx.begin(), cml_pfx.end());
         }
