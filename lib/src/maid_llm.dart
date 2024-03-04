@@ -38,7 +38,10 @@ class MaidLLM {
     lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
   }
 
-  Stream<String> prompt(List<ChatMessage> messages) async* {
+  Stream<String> prompt(List<ChatMessage> messages,
+      {void Function(String)? log}) async* {
+    _log = log;
+
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
