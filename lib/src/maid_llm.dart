@@ -10,6 +10,8 @@ import 'gpt_params.dart';
 import 'bindings.dart';
 
 class MaidLLM {
+  static Completer? _completer;
+  static ReceivePort? _receivePort;
   static SendPort? _sendPort;
   static maid_llm? _lib;
   static void Function(String)? _log;
@@ -35,38 +37,73 @@ class MaidLLM {
 
   MaidLLM(GptParams params, {void Function(String)? log}) {
     _log = log;
-    lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
+
+    _receivePort = ReceivePort();
+    _sendPort = _receivePort!.sendPort;
+
+    _completer = Completer();
+
+    Isolate.spawn(_initIsolate, (params, _sendPort!)).then((value) async {
+      _receivePort!.listen((message) {
+        if (message is int) {
+          if (message == 0) {
+            _completer!.complete();
+          } else {
+            _completer!.completeError(Exception('Failed to initialize LLM'));
+          }
+        }
+      });
+
+      await _completer!.future;
+    });
   }
 
-  Stream<String> prompt(List<ChatMessage> messages,
-      {void Function(String)? log}) async* {
-    _log = log;
-
-    final receivePort = ReceivePort();
-    _sendPort = receivePort.sendPort;
+  Stream<String> prompt(List<ChatMessage> messages) async* {
+    await _completer!.future;
 
     final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
 
-    await for (var data in receivePort) {
+    await for (var data in _receivePort!) {
       if (data is (String, bool)) {
         final (message, done) = data;
 
         if (done) {
-          receivePort.close();
+          _receivePort!.close();
           isolate.kill();
           return;
         }
 
         yield message;
+      } else if (data is String) {
+        _log?.call(data);
       }
     }
+  }
+
+  static void _initIsolate((GptParams, SendPort) args) {
+    final (params, sendPort) = args;
+    _sendPort = sendPort;
+
+    final ret =
+        lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
+
+    _sendPort!.send(ret);
   }
 
   static void _promptIsolate((List<ChatMessage>, SendPort) args) {
     final (messages, sendPort) = args;
     _sendPort = sendPort;
-    lib.maid_llm_prompt(
-        _toNativeChatMessages(messages), Pointer.fromFunction(_output));
+
+    try {
+      final ret = lib.maid_llm_prompt(
+          _toNativeChatMessages(messages), Pointer.fromFunction(_output));
+
+      if (ret != 0) {
+        throw Exception('Failed to prompt');
+      }
+    } catch (e) {
+      _sendPort!.send(e.toString());
+    }
   }
 
   static Pointer<Pointer<chat_message>> _toNativeChatMessages(
@@ -98,14 +135,12 @@ class MaidLLM {
     try {
       _sendPort!.send((buffer.cast<Utf8>().toDartString(), stop));
     } catch (e) {
-      print(e);
+      _sendPort!.send(e.toString());
     }
   }
 
   static void _logOutput(Pointer<Char> message) {
-    if (_log != null) {
-      _log!(message.cast<Utf8>().toDartString());
-    }
+    _sendPort!.send(message.cast<Utf8>().toDartString());
   }
 
   void stop() {
