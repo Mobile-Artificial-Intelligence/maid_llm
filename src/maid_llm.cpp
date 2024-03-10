@@ -213,7 +213,7 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-void parse_messages(chat_message* messages[]) {
+void parse_messages(int msg_count, chat_message* messages[]) {
     std::vector<llama_token> inp_pfx;
     std::vector<llama_token> res_pfx;
     std::vector<llama_token> sfx;
@@ -233,10 +233,11 @@ void parse_messages(chat_message* messages[]) {
     const auto line_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
     const auto line_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
 
-    int length = sizeof(messages) / sizeof(messages[0]);
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < msg_count; i++) {
         chat_message* message = messages[i];
         std::string buffer(message->content);
+
+        printf("role: %d, content: %s\n", message->role, message->content);
 
         // Add tokens to embd only if the input buffer is non-empty
         // Entering a empty line lets the user pass control back
@@ -365,7 +366,7 @@ int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     return 0;
 }
 
-int maid_llm_prompt(struct chat_message* messages[], dart_output *output) {   
+int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output) {   
     bool is_antiprompt = false;
     bool is_interacting = false;
 
@@ -380,7 +381,7 @@ int maid_llm_prompt(struct chat_message* messages[], dart_output *output) {
     stop_generation.store(false);
 
     // parse messages
-    parse_messages(messages);
+    parse_messages(msg_count, messages);
 
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {

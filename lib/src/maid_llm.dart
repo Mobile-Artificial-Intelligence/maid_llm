@@ -98,7 +98,10 @@ class MaidLLM {
 
     try {
       final ret = lib.maid_llm_prompt(
-          _toNativeChatMessages(messages), Pointer.fromFunction(_output));
+        messages.length,
+        _toNativeChatMessages(messages), 
+        Pointer.fromFunction(_output)
+      );
 
       if (ret != 0) {
         throw Exception('Failed to prompt');

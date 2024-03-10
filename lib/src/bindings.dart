@@ -37,10 +37,12 @@ class maid_llm {
       int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
 
   int maid_llm_prompt(
+    int msg_count,
     ffi.Pointer<ffi.Pointer<chat_message>> messages,
     ffi.Pointer<dart_output> output,
   ) {
     return _maid_llm_prompt(
+      msg_count,
       messages,
       output,
     );
@@ -48,11 +50,11 @@ class maid_llm {
 
   late final _maid_llm_promptPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int Function(ffi.Pointer<ffi.Pointer<chat_message>>,
+          ffi.Int Function(ffi.Int, ffi.Pointer<ffi.Pointer<chat_message>>,
               ffi.Pointer<dart_output>)>>('maid_llm_prompt');
   late final _maid_llm_prompt = _maid_llm_promptPtr.asFunction<
-      int Function(
-          ffi.Pointer<ffi.Pointer<chat_message>>, ffi.Pointer<dart_output>)>();
+      int Function(int, ffi.Pointer<ffi.Pointer<chat_message>>,
+          ffi.Pointer<dart_output>)>();
 
   void maid_llm_stop() {
     return _maid_llm_stop();

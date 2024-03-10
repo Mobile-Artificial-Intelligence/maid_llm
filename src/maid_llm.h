@@ -149,7 +149,7 @@ typedef void dart_output(const char *buffer, bool stop);
 
 int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-int maid_llm_prompt(struct chat_message* messages[], dart_output *output);
+int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output);
 
 void maid_llm_stop(void);
 
