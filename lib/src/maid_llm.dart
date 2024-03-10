@@ -59,6 +59,7 @@ class MaidLLM {
 
   Stream<String> prompt(List<ChatMessage> messages) async* {
     await _completer!.future;
+    _completer = Completer();
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
@@ -72,6 +73,7 @@ class MaidLLM {
         if (done) {
           receivePort.close();
           isolate.kill();
+          _completer!.complete();
           return;
         }
 
@@ -148,8 +150,10 @@ class MaidLLM {
     _sendPort!.send(message.cast<Utf8>().toDartString());
   }
 
-  void stop() {
+  Future<void> stop() async {
     lib.maid_llm_stop();
+    await _completer!.future;
+    return;
   }
 
   void clear() {
