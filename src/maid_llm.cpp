@@ -279,7 +279,9 @@ void parse_messages(int msg_count, chat_message* messages[]) {
 static void dart_log_callback(ggml_log_level level, const char * text, void * user_data) {
     (void) level;
     (void) user_data;
-    dart_logger_callback(text);
+    if (dart_logger_callback != NULL) {
+        dart_logger_callback(text);
+    };
 }
 
 int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
@@ -607,6 +609,7 @@ void maid_llm_stop(void) {
 
 void maid_llm_cleanup(void) {
     stop_generation.store(true);
+    dart_logger_callback = NULL;
     llama_print_timings(ctx);
     llama_free(ctx);
     llama_free(ctx_guidance);
