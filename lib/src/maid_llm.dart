@@ -11,7 +11,6 @@ import 'bindings.dart';
 
 class MaidLLM {
   static Completer? _completer;
-  static ReceivePort? _receivePort;
   static SendPort? _sendPort;
   static maid_llm? _lib;
   static void Function(String)? _log;
@@ -38,13 +37,13 @@ class MaidLLM {
   MaidLLM(GptParams params, {void Function(String)? log}) {
     _log = log;
 
-    _receivePort = ReceivePort();
-    _sendPort = _receivePort!.sendPort;
+    final receivePort = ReceivePort();
+    _sendPort = receivePort.sendPort;
 
     _completer = Completer();
 
     Isolate.spawn(_initIsolate, (params, _sendPort!)).then((value) async {
-      _receivePort!.listen((message) {
+      receivePort.listen((message) {
         if (message is int) {
           if (message == 0) {
             _completer!.complete();
@@ -61,14 +60,17 @@ class MaidLLM {
   Stream<String> prompt(List<ChatMessage> messages) async* {
     await _completer!.future;
 
+    final receivePort = ReceivePort();
+    _sendPort = receivePort.sendPort;
+
     final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
 
-    await for (var data in _receivePort!) {
+    await for (var data in receivePort) {
       if (data is (String, bool)) {
         final (message, done) = data;
 
         if (done) {
-          _receivePort!.close();
+          receivePort.close();
           isolate.kill();
           return;
         }
