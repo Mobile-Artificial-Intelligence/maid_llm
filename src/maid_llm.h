@@ -54,7 +54,6 @@ struct gpt_c_params {
     int n_chunks;                                   // max number of chunks to process (-1 = unlimited)
     int n_parallel;                                 // number of parallel sequences to decode
     int n_sequences;                                // number of sequences to decode
-    float p_accept;                                 // speculative decoding accept probability
     float p_split;                                  // speculative decoding split probability
     int n_gpu_layers;                               // number of layers to store in VRAM (-1 - use default)
     int n_gpu_layers_draft;                         // number of layers to store in VRAM for the draft model (-1 - use default)

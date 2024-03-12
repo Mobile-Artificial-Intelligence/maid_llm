@@ -48,9 +48,6 @@ class GptParams {
   /// Number of sequences to decode. Defaults to 1.
   int nSequences = 1;
 
-  /// Speculative decoding accept probability. Defaults to 0.5.
-  double pAccept = 0.5;
-
   /// Speculative decoding split probability. Defaults to 0.1.
   double pSplit = 0.1;
 
@@ -245,7 +242,7 @@ class GptParams {
 
   /// KV cache data type for the K.
   String cacheTypeK = 'f16';
-  
+
   /// KV cache data type for the V.
   String cacheTypeV = 'f16';
 
@@ -270,7 +267,6 @@ class GptParams {
     gpt.ref.n_chunks = nChunks;
     gpt.ref.n_parallel = nParallel;
     gpt.ref.n_sequences = nSequences;
-    gpt.ref.p_accept = pAccept;
     gpt.ref.p_split = pSplit;
     gpt.ref.n_gpu_layers = nGpuLayers;
     gpt.ref.n_gpu_layers_draft = nGpuLayersDraft;
@@ -356,11 +352,12 @@ class GptParams {
     nChunks = json['nChunks'] ?? nChunks;
     nParallel = json['nParallel'] ?? nParallel;
     nSequences = json['nSequences'] ?? nSequences;
-    pAccept = json['pAccept'] ?? pAccept;
     pSplit = json['pSplit'] ?? pSplit;
     nGpuLayers = json['nGpuLayers'] ?? nGpuLayers;
     nGpuLayersDraft = json['nGpuLayersDraft'] ?? nGpuLayersDraft;
-    splitMode = json['splitMode'] != null ? SplitMode.values[json['splitMode']] : splitMode;
+    splitMode = json['splitMode'] != null
+        ? SplitMode.values[json['splitMode']]
+        : splitMode;
     mainGpu = json['mainGpu'] ?? mainGpu;
     nBeams = json['nBeams'] ?? nBeams;
     grpAttnN = json['grpAttnN'] ?? grpAttnN;
@@ -441,7 +438,6 @@ class GptParams {
       'nChunks': nChunks,
       'nParallel': nParallel,
       'nSequences': nSequences,
-      'pAccept': pAccept,
       'pSplit': pSplit,
       'nGpuLayers': nGpuLayers,
       'nGpuLayersDraft': nGpuLayersDraft,
@@ -514,23 +510,8 @@ class GptParams {
 }
 
 /// An enumeration representing different types of LLM Prompt Formats.
-enum PromptFormat {
-  raw, 
-  chatml,
-  alpaca
-}
+enum PromptFormat { raw, chatml, alpaca }
 
-enum SplitMode {
-  none,
-  layer,
-  row
-}
+enum SplitMode { none, layer, row }
 
-enum GgmlNumaStrategy {
-  disabled,
-  distribute,
-  isolate,
-  numactl,
-  mirror,
-  count
-}
+enum GgmlNumaStrategy { disabled, distribute, isolate, numactl, mirror, count }

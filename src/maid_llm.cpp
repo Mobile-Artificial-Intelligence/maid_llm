@@ -91,7 +91,6 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     cpp_params.n_chunks                 = c_params.n_chunks;
     cpp_params.n_parallel               = c_params.n_parallel;
     cpp_params.n_sequences              = c_params.n_sequences;
-    cpp_params.p_accept                 = c_params.p_accept;
     cpp_params.p_split                  = c_params.p_split;
     cpp_params.n_gpu_layers             = c_params.n_gpu_layers;
     cpp_params.n_gpu_layers_draft       = c_params.n_gpu_layers_draft;
@@ -121,7 +120,25 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     cpp_params.yarn_beta_slow           = c_params.yarn_beta_slow;
     cpp_params.yarn_orig_ctx            = c_params.yarn_orig_ctx;
     cpp_params.defrag_thold             = c_params.defrag_thold;
-    cpp_params.rope_scaling_type        = c_params.rope_scaling_type;
+
+    switch (c_params.rope_scaling_type) {
+        case -1:
+            cpp_params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_UNSPECIFIED;
+            break;
+        case 0:
+            cpp_params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_NONE;
+            break;
+        case 1:
+            cpp_params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_LINEAR;
+            break;
+        case 2:
+            cpp_params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_YARN;
+            break;
+        case 3:
+            cpp_params.rope_scaling_type = LLAMA_ROPE_SCALING_TYPE_MAX_VALUE;
+            assert(false);
+            break;
+    }
 
     switch (c_params.numa) {
         case 0:
@@ -141,6 +158,7 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
             break;
         case 5:
             cpp_params.numa = GGML_NUMA_STRATEGY_COUNT;
+            assert(false);
             break;
     };
 

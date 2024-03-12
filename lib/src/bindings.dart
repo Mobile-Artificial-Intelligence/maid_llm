@@ -187,9 +187,6 @@ final class gpt_c_params extends ffi.Struct {
   external int n_sequences;
 
   @ffi.Float()
-  external double p_accept;
-
-  @ffi.Float()
   external double p_split;
 
   @ffi.Int()
@@ -391,6 +388,6 @@ typedef dart_output = ffi.NativeFunction<
 
 const int __bool_true_false_are_defined = 1;
 
-const int true1 = 1;
-
 const int false1 = 0;
+
+const int true1 = 1;
