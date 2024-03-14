@@ -388,6 +388,6 @@ typedef dart_output = ffi.NativeFunction<
 
 const int __bool_true_false_are_defined = 1;
 
-const int false1 = 0;
-
 const int true1 = 1;
+
+const int false1 = 0;

@@ -5,6 +5,12 @@
 extern "C" {
 #endif
 
+#ifdef WIN32
+   #define EXPORT __declspec(dllexport)
+#else
+   #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
+#endif
+
 #include <stdbool.h>
 
 enum chat_role {
@@ -146,13 +152,13 @@ typedef void dart_logger(const char *buffer);
 
 typedef void dart_output(const char *buffer, bool stop);
 
-int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
+EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output);
+EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output);
 
-void maid_llm_stop(void);
+EXPORT void maid_llm_stop(void);
 
-void maid_llm_cleanup(void);
+EXPORT void maid_llm_cleanup(void);
 
 #ifdef __cplusplus
 }

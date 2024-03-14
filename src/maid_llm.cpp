@@ -302,7 +302,7 @@ static void dart_log_callback(ggml_log_level level, const char * text, void * us
     };
 }
 
-int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
+EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     dart_logger_callback = log_output;
 
     llama_log_set(dart_log_callback, NULL);
@@ -386,7 +386,7 @@ int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     return 0;
 }
 
-int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output) {   
+EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output) {   
     bool is_antiprompt = false;
     bool is_interacting = false;
 
@@ -621,11 +621,11 @@ int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output 
     return 0;
 }
 
-void maid_llm_stop(void) {
+EXPORT void maid_llm_stop(void) {
     stop_generation.store(true);
 }
 
-void maid_llm_cleanup(void) {
+EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
     dart_logger_callback = NULL;
     llama_print_timings(ctx);
