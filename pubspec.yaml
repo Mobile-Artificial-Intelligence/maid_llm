@@ -1,7 +1,7 @@
 name: maid_llm
-description: "A new Flutter FFI plugin project."
-version: 0.0.1
-homepage:
+description: "maid_llm is a dart implementation of llama.cpp used by the mobile artificial intelligence distribution (maid)"
+version: 1.0.0
+homepage: "https://github.com/Mobile-Artificial-Intelligence/maid_llm"
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
