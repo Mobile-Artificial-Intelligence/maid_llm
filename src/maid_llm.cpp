@@ -387,12 +387,12 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
     if (params.instruct) {
         // instruct mode: insert instruction prefix to antiprompts
-        params.antiprompt.push_back("\n\n### Instruction:\n\n");
+        params.antiprompt.push_back("### Instruction:");
     }
 
     if (params.chatml) {
         // chatml mode: insert user chat prefix to antiprompts
-        params.antiprompt.push_back("\n<|im_start|>user\n");
+        params.antiprompt.push_back("<|im_start|>user");
     }
 
     return 0;
