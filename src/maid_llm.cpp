@@ -234,17 +234,20 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
 void parse_messages(int msg_count, chat_message* messages[]) {
     std::vector<llama_token> inp_pfx;
     std::vector<llama_token> res_pfx;
+    std::vector<llama_token> sys_pfx;
     std::vector<llama_token> sfx;
 
     if (params.instruct) {
         // prefixes & suffix for instruct mode
         inp_pfx = ::llama_tokenize(ctx, "### Instruction:\n\n",   add_bos, true);
         res_pfx = ::llama_tokenize(ctx, "### Response:\n\n",        false, true);
+        sys_pfx = ::llama_tokenize(ctx, "### System:\n\n",        false, true);
         sfx     = ::llama_tokenize(ctx, "\n\n",                     false, true);
     } else if (params.chatml) {
         // prefixes & suffix for chatml mode
         inp_pfx = ::llama_tokenize(ctx, "<|im_start|>user\n",     add_bos, true);
         res_pfx = ::llama_tokenize(ctx, "<|im_start|>assistant\n",  false, true);
+        sys_pfx = ::llama_tokenize(ctx, "<|im_start|>system\n",  false, true);
         sfx     = ::llama_tokenize(ctx, "<|im_end|>\n",             false, true);
     }
 
@@ -260,30 +263,39 @@ void parse_messages(int msg_count, chat_message* messages[]) {
         // Add tokens to embd only if the input buffer is non-empty
         // Entering a empty line lets the user pass control back
         if (buffer.length() > 1) {
-            if (message->role == ROLE_USER) {
-                // insert user chat prefix
-                if (params.instruct || params.chatml) {
-                    n_consumed = embd_inp.size();
-                    embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
-                }
+            switch (message->role) {
+                case ROLE_USER:
+                    // insert user chat prefix
+                    if (params.instruct || params.chatml) {
+                        embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
+                    }
 
-                embd_inp.insert(embd_inp.end(), line_pfx.begin(), line_pfx.end());
-            } else if (message->role == ROLE_ASSISTANT) {
-                // insert assistant chat prefix
-                if (params.instruct || params.chatml) {
-                    embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
-                }
+                    embd_inp.insert(embd_inp.end(), line_pfx.begin(), line_pfx.end());
+                    break;
+                case ROLE_ASSISTANT:
+                    // insert assistant chat prefix
+                    if (params.instruct || params.chatml) {
+                        embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
+                    }
+                    break;
+                case ROLE_SYSTEM:
+                    // insert system chat prefix
+                    if (params.instruct || params.chatml) {
+                        embd_inp.insert(embd_inp.end(), sys_pfx.begin(), sys_pfx.end());
+                    }
+                    break;
             }
 
-            if (params.escape) {
-                process_escapes(buffer);
-            }            
-            const auto line_inp = ::llama_tokenize(ctx, buffer,              false, false);
-            
+            if (params.escape) process_escapes(buffer);            
+            const auto line_inp = ::llama_tokenize(ctx, buffer, false, false);
             embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
 
             if (message->role == ROLE_USER) {
                 embd_inp.insert(embd_inp.end(), line_sfx.begin(), line_sfx.end());
+            }
+
+            if (params.instruct || params.chatml) {
+                embd_inp.insert(embd_inp.end(), sfx.begin(), sfx.end());
             }
         }
     }
