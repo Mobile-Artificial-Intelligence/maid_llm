@@ -408,6 +408,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     const int n_ctx = llama_n_ctx(ctx);
 
     std::vector<llama_token> embd_cache;
+    std::vector<llama_token> embd_out;
 
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
@@ -554,12 +555,25 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             }
         }
 
-        if (n_past >= (int) embd_inp.size() - 1) {
+        // Cache the last 4 tokens for display
+        // This is done to ensure the antiprompt is detected correctly
+        embd_cache.insert(embd_cache.end(), embd.begin(), embd.end());
+        if ((int) embd_cache.size() > 4) {
             // display text
-            for (auto id : embd) {
+            while ((int) embd_cache.size() > 4) {
+                auto id = embd_cache.front();
+                embd_out.push_back(id);
+                embd_cache.erase(embd_cache.begin());
+            }
+        }
+
+        if (n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) {
+            for (auto id : embd_out) {
                 output(llama_token_to_piece(ctx, id).c_str(), false);
             }
         }
+
+        embd_out.clear();
 
         // if not currently processing queued inputs;
         if ((int) embd_inp.size() <= n_consumed) {
