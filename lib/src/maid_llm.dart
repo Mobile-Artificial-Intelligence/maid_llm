@@ -37,6 +37,10 @@ class MaidLLM {
   MaidLLM(GptParams params, {void Function(String)? log}) {
     _log = log;
 
+    if (_log != null) {
+      _log!("Initializing LLM");
+    }
+
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
@@ -78,8 +82,8 @@ class MaidLLM {
         }
 
         yield message;
-      } else if (data is String) {
-        _log?.call(data);
+      } else if (data is String && _log != null) {
+        _log!(data);
       }
     }
   }
@@ -147,7 +151,9 @@ class MaidLLM {
   }
 
   static void _logOutput(Pointer<Char> message) {
-    _sendPort!.send(message.cast<Utf8>().toDartString());
+    final logMessage = message.cast<Utf8>().toDartString();
+
+    _sendPort!.send(logMessage);
   }
 
   Future<void> stop() async {
