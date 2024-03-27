@@ -47,13 +47,15 @@ class MaidLLM {
     _completer = Completer();
 
     Isolate.spawn(_initIsolate, (params, _sendPort!)).then((value) async {
-      receivePort.listen((message) {
-        if (message is int) {
-          if (message == 0) {
+      receivePort.listen((data) {
+        if (data is int) {
+          if (data == 0) {
             _completer!.complete();
           } else {
             _completer!.completeError(Exception('Failed to initialize LLM'));
-          }
+          } 
+        } else if (data is String && _log != null) {
+          _log!(data);
         }
       });
 
@@ -106,7 +108,8 @@ class MaidLLM {
       final ret = lib.maid_llm_prompt(
         messages.length,
         _toNativeChatMessages(messages), 
-        Pointer.fromFunction(_output)
+        Pointer.fromFunction(_output), 
+        Pointer.fromFunction(_logOutput)
       );
 
       if (ret != 0) {

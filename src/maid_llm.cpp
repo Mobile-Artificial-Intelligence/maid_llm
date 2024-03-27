@@ -48,6 +48,8 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
     llama_log_set(dart_log_callback, NULL);
 
+    dart_logger_callback("Initializing LLM...\n");
+
     params = from_c_params(*c_params);
 
     std::mt19937 rng(params.seed);
@@ -127,7 +129,9 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
     return 0;
 }
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output) {   
+EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {   
+    dart_logger_callback = log_output;
+    
     bool is_antiprompt = false;
     bool is_interacting = false;
 
