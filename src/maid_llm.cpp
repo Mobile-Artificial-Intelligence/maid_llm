@@ -42,12 +42,8 @@ static bool add_bos;
 static gpt_params params;
 static llama_context_params lparams;
 
-static dart_logger *dart_logger_callback;
-
 EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
-    dart_logger_callback = log_output;
-
-    llama_log_set(dart_log_callback, NULL);
+    auto init_start_time = std::chrono::high_resolution_clock::now();
 
     params = from_c_params(*c_params);
 
@@ -58,6 +54,9 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
     llama_backend_init();
     llama_numa_init(params.numa);
+
+    auto backend_init_time = std::chrono::high_resolution_clock::now();
+    log_output(("Backend init in " + get_elapsed_seconds(backend_init_time - init_start_time)).c_str());
 
     guidance_offset = 0;
     original_prompt_len = 0;
@@ -74,18 +73,33 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
         return 1;
     }
 
+    auto model_init_time = std::chrono::high_resolution_clock::now();
+    log_output(("Model init in " + get_elapsed_seconds(model_init_time - backend_init_time)).c_str());
+
     lparams = llama_context_params_from_gpt_params(params);
 
+    auto context_init_time = std::chrono::high_resolution_clock::now();
+    log_output(("Context params init in " + get_elapsed_seconds(context_init_time - model_init_time)).c_str());
+
     ctx_sampling = llama_sampling_init(params.sparams);
+
+    auto sampling_init_time = std::chrono::high_resolution_clock::now();
+    log_output(("Sampling init in " + get_elapsed_seconds(sampling_init_time - context_init_time)).c_str());
 
     if (params.sparams.cfg_scale > 1.f) {
         ctx_guidance = llama_new_context_with_model(model, lparams);
     }
 
+    auto guidance_init_time = std::chrono::high_resolution_clock::now();
+    log_output(("Guidance init in " + get_elapsed_seconds(guidance_init_time - sampling_init_time)).c_str());
+
     add_bos = llama_should_add_bos_token(model);
 
     // tokenize the prompt
     embd_inp = ::llama_tokenize(model, params.prompt, add_bos, true);
+
+    auto tokenize_prompt_time = std::chrono::high_resolution_clock::now();
+    log_output(("Tokenize prompt in " + get_elapsed_seconds(tokenize_prompt_time - guidance_init_time)).c_str());
 
     // Should not run without any tokens
     if (embd_inp.empty()) {
@@ -102,6 +116,9 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
         original_prompt_len = original_inp.size();
         guidance_offset = (int)guidance_inp.size() - original_prompt_len;
     }
+
+    auto tokenize_negative_prompt_time = std::chrono::high_resolution_clock::now();
+    log_output(("Tokenize negative prompt in " + get_elapsed_seconds(tokenize_negative_prompt_time - tokenize_prompt_time)).c_str());
 
     if ((int) embd_inp.size() > lparams.n_ctx - 4) {
         //Truncate the prompt if it's too long
@@ -125,13 +142,14 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
         params.antiprompt.push_back("<|im_start|>user");
     }
 
+    auto init_end_time = std::chrono::high_resolution_clock::now();
+    log_output(("Init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
+
     return 0;
 }
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {   
-    dart_logger_callback = log_output;
-
-    llama_log_set(dart_log_callback, NULL);
+EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
+    auto prompt_start_time = std::chrono::high_resolution_clock::now();
 
     bool is_antiprompt = false;
     bool is_interacting = false;
@@ -147,20 +165,14 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
 
-    dart_logger_callback("Starting messages parsing...\n");
-
-    auto start = std::chrono::high_resolution_clock::now();
+    auto passed_lock_time = std::chrono::high_resolution_clock::now();
+    log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
     // parse messages
     parse_messages(msg_count, messages);
 
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> elapsed_seconds = end - start;
-
-    std::string message = "Parsed messages in " + std::to_string(elapsed_seconds.count()) + " seconds\n";
-
-    dart_logger_callback(message.c_str());
+    auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
+    log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
 
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {
@@ -399,7 +411,6 @@ EXPORT void maid_llm_stop(void) {
 
 EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
-    dart_logger_callback = NULL;
     llama_print_timings(ctx);
     llama_free(ctx);
     llama_free(ctx_guidance);
@@ -672,10 +683,6 @@ void parse_messages(int msg_count, chat_message* messages[]) {
     }
 }
 
-static void dart_log_callback(ggml_log_level level, const char * text, void * user_data) {
-    (void) level;
-    (void) user_data;
-    if (dart_logger_callback != NULL) {
-        dart_logger_callback(text);
-    };
+std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
+    return std::to_string(std::chrono::duration<double>(__d).count()) + " seconds\n";
 }
