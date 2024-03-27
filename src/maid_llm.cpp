@@ -174,6 +174,8 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
 
+    bool has_output = false;
+
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
@@ -183,6 +185,8 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
         // predict
         if (!embd.empty()) {
+            auto prediction_start_time = std::chrono::high_resolution_clock::now();
+
             // Note: lparams.n_ctx - 4 here is to match the logic for commandline prompt handling via
             // --prompt or --file which uses the same value.
             int max_embd_size = lparams.n_ctx - 4;
@@ -284,21 +288,31 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
                 n_past += n_eval;
             }
+
+            auto prediction_end_time = std::chrono::high_resolution_clock::now();
+            log_output(("Predicted in " + get_elapsed_seconds(prediction_end_time - prediction_start_time)).c_str());
         }
 
         embd.clear();
         embd_guidance.clear();
 
         if ((int) embd_inp.size() <= n_consumed && !is_interacting) {
+            auto sample_start_time = std::chrono::high_resolution_clock::now();
+
             const llama_token id = llama_sampling_sample(ctx_sampling, ctx, ctx_guidance);
 
             llama_sampling_accept(ctx_sampling, ctx, id, true);
 
             embd.push_back(id);
 
+            auto sample_end_time = std::chrono::high_resolution_clock::now();
+            log_output(("Sampled token in " + get_elapsed_seconds(sample_end_time - sample_start_time)).c_str());
+
             // decrement remaining sampling budget
             --n_remain;
         } else {
+            auto push_start_time = std::chrono::high_resolution_clock::now();
+
             while ((int) embd_inp.size() > n_consumed) {
                 embd.push_back(embd_inp[n_consumed]);
 
@@ -311,6 +325,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                     break;
                 }
             }
+
+            auto push_end_time = std::chrono::high_resolution_clock::now();
+            log_output(("Pushed tokens in " + get_elapsed_seconds(push_end_time - push_start_time)).c_str());
         }
 
         // Cache the last 4 tokens for display
@@ -323,6 +340,13 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 embd_out.push_back(id);
                 embd_cache.erase(embd_cache.begin());
             }
+
+            if (!has_output) {
+                auto first_output_time = std::chrono::high_resolution_clock::now();
+                log_output(("First output in " + get_elapsed_seconds(first_output_time - prompt_start_time)).c_str());
+            }
+
+            has_output = true;
         }
 
         if ((n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
@@ -684,5 +708,5 @@ void parse_messages(int msg_count, chat_message* messages[]) {
 }
 
 std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
-    return std::to_string(std::chrono::duration<double>(__d).count()) + " seconds\n";
+    return std::to_string(std::chrono::duration<double>(__d).count()) + " seconds";
 }
