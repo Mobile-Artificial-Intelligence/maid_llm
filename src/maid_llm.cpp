@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -47,8 +48,6 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
     dart_logger_callback = log_output;
 
     llama_log_set(dart_log_callback, NULL);
-
-    dart_logger_callback("Initializing LLM...\n");
 
     params = from_c_params(*c_params);
 
@@ -131,7 +130,9 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {   
     dart_logger_callback = log_output;
-    
+
+    llama_log_set(dart_log_callback, NULL);
+
     bool is_antiprompt = false;
     bool is_interacting = false;
 
@@ -146,8 +147,20 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
 
+    dart_logger_callback("Starting messages parsing...\n");
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     // parse messages
     parse_messages(msg_count, messages);
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    std::string message = "Parsed messages in " + std::to_string(elapsed_seconds.count()) + " seconds\n";
+
+    dart_logger_callback(message.c_str());
 
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {
