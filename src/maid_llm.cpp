@@ -340,6 +340,12 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 embd_out.push_back(id);
                 embd_cache.erase(embd_cache.begin());
             }
+        }
+
+        if ((n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
+            for (auto id : embd_out) {
+                output(llama_token_to_piece(ctx, id).c_str(), false);
+            }
 
             if (!has_output) {
                 auto first_output_time = std::chrono::high_resolution_clock::now();
@@ -347,12 +353,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             }
 
             has_output = true;
-        }
-
-        if ((n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
-            for (auto id : embd_out) {
-                output(llama_token_to_piece(ctx, id).c_str(), false);
-            }
         }
 
         embd_out.clear();
