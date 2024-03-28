@@ -8,24 +8,22 @@ import 'package:langchain/langchain.dart';
 import 'gpt_params.dart';
 
 import 'maid_llm_bindings.dart';
-import 'llama_bindings.dart';
 
 class MaidLLM {
   static Completer? _completer;
   static SendPort? _sendPort;
-  static maid_llm? _libMaidLLM;
-  static llama_cpp? _libLlamaCpp;
+  static maid_llm? _lib;
   static void Function(String)? _log;
 
   /// Getter for the maid_llm library.
   ///
   /// Loads the library based on the current platform.
-  static maid_llm get libMaidLLM {
-    if (_libMaidLLM == null) {
+  static maid_llm get lib {
+    if (_lib == null) {
       if (Platform.isWindows) {
-        _libMaidLLM = maid_llm(DynamicLibrary.open('maid.dll'));
+        _lib = maid_llm(DynamicLibrary.open('maid.dll'));
       } else if (Platform.isLinux || Platform.isAndroid) {
-        _libMaidLLM = maid_llm(DynamicLibrary.open('libmaid.so'));
+        _lib = maid_llm(DynamicLibrary.open('libmaid.so'));
       } else if (Platform.isMacOS || Platform.isIOS) {
         throw Exception('Unsupported platform');
         //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));
@@ -33,41 +31,18 @@ class MaidLLM {
         throw Exception('Unsupported platform');
       }
     }
-    return _libMaidLLM!;
-  }
-
-  /// Getter for the maid_llm library.
-  ///
-  /// Loads the library based on the current platform.
-  static llama_cpp get libLlamaCpp {
-    if (_libLlamaCpp == null) {
-      if (Platform.isWindows) {
-        _libLlamaCpp = llama_cpp(DynamicLibrary.open('llama.dll'));
-      } else if (Platform.isLinux || Platform.isAndroid) {
-        _libLlamaCpp = llama_cpp(DynamicLibrary.open('libllama.so'));
-      } else if (Platform.isMacOS || Platform.isIOS) {
-        throw Exception('Unsupported platform');
-        //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));
-      } else {
-        throw Exception('Unsupported platform');
-      }
-    }
-    return _libLlamaCpp!;
+    return _lib!;
   }
 
   MaidLLM(GptParams params, {void Function(String)? log}) {
     _log = log;
-
-    if (_log != null) {
-      _log!("Initializing LLM");
-    }
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
     _completer = Completer();
 
-    Isolate.spawn(_initIsolate, (params, _sendPort!)).then((value) async {
+    Isolate.spawn(_loadModelIsolate, (params, _sendPort!)).then((value) async {
       receivePort.listen((data) {
         if (data is int) {
           if (data == 0) {
@@ -84,14 +59,14 @@ class MaidLLM {
     });
   }
 
-  Stream<String> prompt(List<ChatMessage> messages) async* {
+  Stream<String> prompt(GptParams params, List<ChatMessage> messages) async* {
     await _completer!.future;
     _completer = Completer();
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
-    final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
+    final isolate = await Isolate.spawn(_promptIsolate, (messages, params, _sendPort!));
 
     await for (var data in receivePort) {
       if (data is (String, bool)) {
@@ -111,26 +86,28 @@ class MaidLLM {
     }
   }
 
-  static void _initIsolate((GptParams, SendPort) args) {
+  static void _loadModelIsolate((GptParams, SendPort) args) {
     final (params, sendPort) = args;
     _sendPort = sendPort;
 
-    final ret =
-        libMaidLLM.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
+    final ret = lib.maid_llm_load_model(params.get());
 
     _sendPort!.send(ret);
   }
 
-  static void _promptIsolate((List<ChatMessage>, SendPort) args) {
-    final (messages, sendPort) = args;
+  static void _promptIsolate((List<ChatMessage>, GptParams, SendPort) args) {
+    final (messages, params, sendPort) = args;
     _sendPort = sendPort;
 
     try {
-      final ret = libMaidLLM.maid_llm_prompt(
-        messages.length,
-        _toNativeChatMessages(messages), 
-        Pointer.fromFunction(_output), 
-        Pointer.fromFunction(_logOutput)
+      final outputs = calloc<dart_outputs>()
+        ..ref.log = Pointer.fromFunction(_logOutput)
+        ..ref.chat = Pointer.fromFunction(_output);
+
+      final ret = lib.maid_llm_prompt(
+        params.get(),
+        _toNativeChat(messages),
+        outputs
       );
 
       if (ret != 0) {
@@ -141,26 +118,38 @@ class MaidLLM {
     }
   }
 
-  static Pointer<Pointer<chat_message>> _toNativeChatMessages(
+  static Pointer<maid_llm_chat> _toNativeChat(
       List<ChatMessage> messages) {
-    final chatMessages = calloc<Pointer<chat_message>>(messages.length);
+    final chatMessages = calloc<llama_chat_message>(messages.length);
 
+    int length = 0;
     for (var i = 0; i < messages.length; i++) {
-      chatMessages[i] = calloc<chat_message>()
-        ..ref.role = _chatMessageToRole(messages[i])
-        ..ref.content = messages[i].contentAsString.toNativeUtf8().cast<Char>();
+      final content = messages[i].contentAsString;
+
+      final message = calloc<llama_chat_message>()
+        ..ref.role = _chatMessageToRole(messages[i]).toNativeUtf8().cast<Char>()
+        ..ref.content = content.toNativeUtf8().cast<Char>();
+
+      chatMessages[i] = message.ref;
+
+      length += content.length;
     }
 
-    return chatMessages;
+    final chat = calloc<maid_llm_chat>()
+      ..ref.messages = chatMessages
+      ..ref.n_messages = messages.length
+      ..ref.length = length;
+
+    return chat;
   }
 
-  static int _chatMessageToRole(ChatMessage message) {
+  static String _chatMessageToRole(ChatMessage message) {
     if (message is SystemChatMessage) {
-      return chat_role.ROLE_SYSTEM;
+      return "system";
     } else if (message is HumanChatMessage) {
-      return chat_role.ROLE_USER;
+      return "user";
     } else if (message is AIChatMessage) {
-      return chat_role.ROLE_ASSISTANT;
+      return "assistant";
     } else {
       throw Exception('Unknown ChatMessage type');
     }
@@ -181,12 +170,12 @@ class MaidLLM {
   }
 
   Future<void> stop() async {
-    libMaidLLM.maid_llm_stop();
+    lib.maid_llm_stop();
     await _completer!.future;
     return;
   }
 
   void clear() {
-    libMaidLLM.maid_llm_cleanup();
+    lib.maid_llm_cleanup();
   }
 }

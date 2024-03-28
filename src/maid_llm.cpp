@@ -23,7 +23,7 @@ static gpt_params params;
 static llama_model * model;
 static char * current_model_path = "";
 
-EXPORT double maid_llm_load_model(maid_llm_params *cparams) {
+EXPORT double maid_llm_load_model(struct maid_llm_params *cparams) {
     auto load_model_start_time = std::chrono::high_resolution_clock::now();
 
     params = from_c_params(*cparams);
@@ -33,12 +33,13 @@ EXPORT double maid_llm_load_model(maid_llm_params *cparams) {
     llama_numa_init(params.numa);
 
     model = llama_load_model_from_file(cparams->model, mparams);
+    current_model_path = cparams->model;
 
     auto model_load_end_time = std::chrono::high_resolution_clock::now();
     return std::chrono::duration<double>(model_load_end_time - load_model_start_time).count();
 }
 
-EXPORT int maid_llm_prompt(maid_llm_params *cparams, maid_llm_chat *chat, dart_outputs *output) {
+EXPORT int maid_llm_prompt(struct maid_llm_params *cparams, struct maid_llm_chat *chat, struct dart_outputs *output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
 
     std::lock_guard<std::mutex> lock(continue_mutex);
@@ -78,6 +79,7 @@ EXPORT int maid_llm_prompt(maid_llm_params *cparams, maid_llm_chat *chat, dart_o
     const int n_ctx = llama_n_ctx(ctx);
 
     std::vector<llama_token> embd;
+    std::vector<llama_token> embd_inp;
     std::vector<llama_token> embd_out;
     std::vector<llama_token> embd_cache;
     std::vector<llama_token> embd_guidance;
@@ -103,7 +105,7 @@ EXPORT int maid_llm_prompt(maid_llm_params *cparams, maid_llm_chat *chat, dart_o
     auto passed_lock_time = std::chrono::high_resolution_clock::now();
     output->log(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
-    std::vector<llama_token> embd_inp = parse_messages(chat);
+    embd_inp = parse_messages(chat);
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     output->log(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());

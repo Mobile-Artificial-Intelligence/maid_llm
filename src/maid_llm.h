@@ -12,12 +12,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-
-enum chat_role {
-    ROLE_SYSTEM,
-    ROLE_USER,
-    ROLE_ASSISTANT
-};
+#include "llama.h"
 
 typedef void log_output(const char *buffer);
 
@@ -147,11 +142,6 @@ struct maid_llm_params {
     char *image;                                    // path to an image file
 };
 
-struct chat_message {
-    enum chat_role role;
-    char *content;
-};
-
 struct maid_llm_chat {
     struct llama_chat_message * messages;
     size_t n_messages;
@@ -163,11 +153,9 @@ struct dart_outputs {
     chat_output *chat;
 };
 
-EXPORT double maid_llm_load_model(struct maid_llm_params *c_params);
+EXPORT double maid_llm_load_model(struct maid_llm_params *cparams);
 
-EXPORT int maid_llm_init(struct maid_llm_params *c_params, log_output *log_out);
-
-EXPORT int maid_llm_prompt(maid_llm_chat *chat, dart_outputs *output);
+EXPORT int maid_llm_prompt(struct maid_llm_params *cparams, struct maid_llm_chat *chat, struct dart_outputs *output);
 
 EXPORT void maid_llm_stop(void);
 
