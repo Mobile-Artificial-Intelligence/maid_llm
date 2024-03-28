@@ -13,7 +13,7 @@ class MaidLLM {
   static Completer? _completer;
   static SendPort? _sendPort;
   static maid_llm? _lib;
-  static void Function(String)? _log;
+  static void Function(String)? log;
 
   /// Getter for the maid_llm library.
   ///
@@ -49,8 +49,8 @@ class MaidLLM {
           } else {
             _completer!.completeError(Exception('Failed to initialize LLM'));
           } 
-        } else if (data is String && _log != null) {
-          _log!(data);
+        } else if (data is String && log != null) {
+          log!(data);
         }
       });
 
@@ -59,7 +59,7 @@ class MaidLLM {
   }
 
   static Stream<String> prompt(GptParams params, List<ChatMessage> messages) async* {
-    await _completer!.future;
+    await _completer?.future;
     _completer = Completer();
 
     final receivePort = ReceivePort();
@@ -79,8 +79,8 @@ class MaidLLM {
         }
 
         yield message;
-      } else if (data is String && _log != null) {
-        _log!(data);
+      } else if (data is String && log != null) {
+        log!(data);
       }
     }
   }
@@ -174,7 +174,7 @@ class MaidLLM {
     return;
   }
 
-  void clear() {
+  static void clear() {
     lib.maid_llm_cleanup();
   }
 }
