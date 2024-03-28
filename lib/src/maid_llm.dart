@@ -34,8 +34,7 @@ class MaidLLM {
     return _lib!;
   }
 
-  MaidLLM(GptParams params, {void Function(String)? log}) {
-    _log = log;
+  static void loadModel(GptParams params) {
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
@@ -59,7 +58,7 @@ class MaidLLM {
     });
   }
 
-  Stream<String> prompt(GptParams params, List<ChatMessage> messages) async* {
+  static Stream<String> prompt(GptParams params, List<ChatMessage> messages) async* {
     await _completer!.future;
     _completer = Completer();
 
@@ -169,7 +168,7 @@ class MaidLLM {
     _sendPort!.send(logMessage);
   }
 
-  Future<void> stop() async {
+  static Future<void> stop() async {
     lib.maid_llm_stop();
     await _completer!.future;
     return;
