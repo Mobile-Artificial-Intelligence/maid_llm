@@ -252,8 +252,8 @@ class GptParams {
   /// Path to an image file.
   String image = '';
 
-  Pointer<gpt_c_params> get() {
-    final gpt = calloc<gpt_c_params>();
+  Pointer<maid_llm_params> get() {
+    final gpt = calloc<maid_llm_params>();
     gpt.ref.seed = seed;
     gpt.ref.n_threads = nThreads;
     gpt.ref.n_threads_draft = nThreadsDraft;

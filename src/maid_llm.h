@@ -19,6 +19,10 @@ enum chat_role {
     ROLE_ASSISTANT
 };
 
+typedef void log_output(const char *buffer);
+
+typedef void chat_output(const char *buffer, bool stop);
+
 // sampling parameters
 struct sampling_params {
     int         n_prev;                             // number of previous tokens to remember
@@ -45,8 +49,8 @@ struct sampling_params {
     float       cfg_scale;                          // how strong is guidance
 };
 
-// llama.cpp gpt_c_params
-struct gpt_c_params {
+// llama.cpp maid_llm_params
+struct maid_llm_params {
     signed int seed;                                // RNG seed
     int n_threads;              
     int n_threads_draft;                
@@ -148,13 +152,22 @@ struct chat_message {
     char *content;
 };
 
-typedef void dart_logger(const char *buffer);
+struct maid_llm_chat {
+    struct llama_chat_message * messages;
+    size_t n_messages;
+    int32_t length;
+};
 
-typedef void dart_output(const char *buffer, bool stop);
+struct dart_outputs {
+    log_output *log;
+    chat_output *chat;
+};
 
-EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
+EXPORT double maid_llm_load_model(struct maid_llm_params *c_params);
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output);
+EXPORT int maid_llm_init(struct maid_llm_params *c_params, log_output *log_out);
+
+EXPORT int maid_llm_prompt(maid_llm_chat *chat, dart_outputs *output);
 
 EXPORT void maid_llm_stop(void);
 

@@ -20,33 +20,33 @@ class maid_llm {
       : _lookup = lookup;
 
   int maid_llm_init(
-    ffi.Pointer<gpt_c_params> c_params,
-    ffi.Pointer<dart_logger> log_output,
+    ffi.Pointer<maid_llm_params> c_params,
+    ffi.Pointer<log_output> log_out,
   ) {
     return _maid_llm_init(
       c_params,
-      log_output,
+      log_out,
     );
   }
 
   late final _maid_llm_initPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Int Function(ffi.Pointer<gpt_c_params>,
-              ffi.Pointer<dart_logger>)>>('maid_llm_init');
+          ffi.Int Function(ffi.Pointer<maid_llm_params>,
+              ffi.Pointer<log_output>)>>('maid_llm_init');
   late final _maid_llm_init = _maid_llm_initPtr.asFunction<
-      int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
+      int Function(ffi.Pointer<maid_llm_params>, ffi.Pointer<log_output>)>();
 
   int maid_llm_prompt(
     int msg_count,
     ffi.Pointer<ffi.Pointer<chat_message>> messages,
-    ffi.Pointer<dart_output> output,
-    ffi.Pointer<dart_logger> log_output,
+    ffi.Pointer<chat_output> output,
+    ffi.Pointer<log_output> log_out,
   ) {
     return _maid_llm_prompt(
       msg_count,
       messages,
       output,
-      log_output,
+      log_out,
     );
   }
 
@@ -55,11 +55,11 @@ class maid_llm {
           ffi.Int Function(
               ffi.Int,
               ffi.Pointer<ffi.Pointer<chat_message>>,
-              ffi.Pointer<dart_output>,
-              ffi.Pointer<dart_logger>)>>('maid_llm_prompt');
+              ffi.Pointer<chat_output>,
+              ffi.Pointer<log_output>)>>('maid_llm_prompt');
   late final _maid_llm_prompt = _maid_llm_promptPtr.asFunction<
       int Function(int, ffi.Pointer<ffi.Pointer<chat_message>>,
-          ffi.Pointer<dart_output>, ffi.Pointer<dart_logger>)>();
+          ffi.Pointer<chat_output>, ffi.Pointer<log_output>)>();
 
   void maid_llm_stop() {
     return _maid_llm_stop();
@@ -151,7 +151,7 @@ final class sampling_params extends ffi.Struct {
   external double cfg_scale;
 }
 
-final class gpt_c_params extends ffi.Struct {
+final class maid_llm_params extends ffi.Struct {
   @ffi.Int()
   external int seed;
 
@@ -386,9 +386,9 @@ final class chat_message extends ffi.Struct {
   external ffi.Pointer<ffi.Char> content;
 }
 
-typedef dart_logger
+typedef log_output
     = ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Char> buffer)>;
-typedef dart_output = ffi.NativeFunction<
+typedef chat_output = ffi.NativeFunction<
     ffi.Void Function(ffi.Pointer<ffi.Char> buffer, ffi.Bool stop)>;
 
 const int __bool_true_false_are_defined = 1;
