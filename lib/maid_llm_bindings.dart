@@ -1,3 +1,3 @@
 library;
 
-export 'src/bindings.dart';
+export 'src/maid_llm_bindings.dart';

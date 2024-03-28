@@ -7,23 +7,25 @@ import 'package:ffi/ffi.dart';
 import 'package:langchain/langchain.dart';
 import 'gpt_params.dart';
 
-import 'bindings.dart';
+import 'maid_llm_bindings.dart';
+import 'llama_bindings.dart';
 
 class MaidLLM {
   static Completer? _completer;
   static SendPort? _sendPort;
-  static maid_llm? _lib;
+  static maid_llm? _libMaidLLM;
+  static llama_cpp? _libLlamaCpp;
   static void Function(String)? _log;
 
-  /// Getter for the Llama library.
+  /// Getter for the maid_llm library.
   ///
   /// Loads the library based on the current platform.
-  static maid_llm get lib {
-    if (_lib == null) {
+  static maid_llm get libMaidLLM {
+    if (_libMaidLLM == null) {
       if (Platform.isWindows) {
-        _lib = maid_llm(DynamicLibrary.open('maid.dll'));
+        _libMaidLLM = maid_llm(DynamicLibrary.open('maid.dll'));
       } else if (Platform.isLinux || Platform.isAndroid) {
-        _lib = maid_llm(DynamicLibrary.open('libmaid.so'));
+        _libMaidLLM = maid_llm(DynamicLibrary.open('libmaid.so'));
       } else if (Platform.isMacOS || Platform.isIOS) {
         throw Exception('Unsupported platform');
         //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));
@@ -31,7 +33,26 @@ class MaidLLM {
         throw Exception('Unsupported platform');
       }
     }
-    return _lib!;
+    return _libMaidLLM!;
+  }
+
+  /// Getter for the maid_llm library.
+  ///
+  /// Loads the library based on the current platform.
+  static llama_cpp get libLlamaCpp {
+    if (_libLlamaCpp == null) {
+      if (Platform.isWindows) {
+        _libLlamaCpp = llama_cpp(DynamicLibrary.open('llama.dll'));
+      } else if (Platform.isLinux || Platform.isAndroid) {
+        _libLlamaCpp = llama_cpp(DynamicLibrary.open('libllama.so'));
+      } else if (Platform.isMacOS || Platform.isIOS) {
+        throw Exception('Unsupported platform');
+        //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));
+      } else {
+        throw Exception('Unsupported platform');
+      }
+    }
+    return _libLlamaCpp!;
   }
 
   MaidLLM(GptParams params, {void Function(String)? log}) {
@@ -95,7 +116,7 @@ class MaidLLM {
     _sendPort = sendPort;
 
     final ret =
-        lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
+        libMaidLLM.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
 
     _sendPort!.send(ret);
   }
@@ -105,7 +126,7 @@ class MaidLLM {
     _sendPort = sendPort;
 
     try {
-      final ret = lib.maid_llm_prompt(
+      final ret = libMaidLLM.maid_llm_prompt(
         messages.length,
         _toNativeChatMessages(messages), 
         Pointer.fromFunction(_output), 
@@ -160,12 +181,12 @@ class MaidLLM {
   }
 
   Future<void> stop() async {
-    lib.maid_llm_stop();
+    libMaidLLM.maid_llm_stop();
     await _completer!.future;
     return;
   }
 
   void clear() {
-    lib.maid_llm_cleanup();
+    libMaidLLM.maid_llm_cleanup();
   }
 }

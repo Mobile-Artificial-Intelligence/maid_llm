@@ -22,14 +22,25 @@ dev_dependencies:
 
 ffigen:
   name: 'maid_llm'
-  description: 'llama.cpp binding'
-  output: 'lib/src/bindings.dart'
+  description: 'maid_llm binding'
+  output: 'lib/src/maid_llm_bindings.dart'
   ignore-source-errors: true
   headers:
     entry-points:
       - 'src/maid_llm.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
+
+#ffigen:
+#  name: 'llama_cpp'
+#  description: 'llama.cpp binding'
+#  output: 'lib/src/llama_bindings.dart'
+#  ignore-source-errors: true
+#  headers:
+#    entry-points:
+#      - 'src/llama_cpp/llama.h'
+#  compiler-opts:
+#    - '-I/usr/lib/clang/17/include'
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -1,6 +1,6 @@
 import 'dart:ffi';
 
-import 'bindings.dart';
+import 'maid_llm_bindings.dart';
 
 import 'package:ffi/ffi.dart';
 
