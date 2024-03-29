@@ -129,8 +129,6 @@ class MaidLLM {
       final content = messages[i].contentAsString;
       final role = _chatMessageToRole(messages[i]);
 
-      print('=========================$role=========================\n\n$content\n\n');
-
       final message = calloc<llama_chat_message>()
         ..ref.role = role.toNativeUtf8().cast<Char>()
         ..ref.content = content.toNativeUtf8().cast<Char>();
@@ -139,7 +137,7 @@ class MaidLLM {
 
       size += content.length;
 
-      addAss = (role == "user");
+      addAss = (role != "assistant");
     }
 
     final chat = calloc<maid_llm_chat>()
@@ -147,6 +145,8 @@ class MaidLLM {
       ..ref.length = messages.length
       ..ref.size = size
       ..ref.add_ass = addAss;
+
+    print("Add Assistant: $addAss");
 
     return chat;
   }

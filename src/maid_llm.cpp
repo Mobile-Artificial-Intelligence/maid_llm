@@ -139,7 +139,7 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, log_output *log_output) 
 
     if (params.chatml) {
         // chatml mode: insert user chat prefix to antiprompts
-        params.antiprompt.push_back("<|im_start|>user");
+        params.antiprompt.push_back("<|im_end|>\n<|im_start|>user");
     }
 
     auto init_end_time = std::chrono::high_resolution_clock::now();
@@ -158,6 +158,12 @@ EXPORT int maid_llm_prompt(struct maid_llm_chat * chat, chat_output *output, log
     const int ga_w = params.grp_attn_w;
     int ga_i = 0;
     const int n_ctx = llama_n_ctx(ctx);
+
+    int cache_size = 4;
+    for (int i = 0; i < params.antiprompt.size(); i++) {
+        auto antiprompt_tokens = ::llama_tokenize(ctx, params.antiprompt[i], false, true);
+        cache_size = std::max(cache_size, (int) antiprompt_tokens.size());
+    }
 
     std::vector<llama_token> embd_cache;
     std::vector<llama_token> embd_out;
@@ -338,7 +344,7 @@ EXPORT int maid_llm_prompt(struct maid_llm_chat * chat, chat_output *output, log
         // Cache the last 4 tokens for display
         // This is done to ensure the antiprompt is detected correctly
         embd_cache.insert(embd_cache.end(), embd.begin(), embd.end());
-        if ((int) embd_cache.size() > 4) {
+        if ((int) embd_cache.size() > cache_size) {
             // display text
             while ((int) embd_cache.size() > 4) {
                 auto id = embd_cache.front();
@@ -347,7 +353,7 @@ EXPORT int maid_llm_prompt(struct maid_llm_chat * chat, chat_output *output, log
             }
         }
 
-        if ((n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
+        if ((n_past - cache_size - 2 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
             for (auto id : embd_out) {
                 output(llama_token_to_piece(ctx, id).c_str(), false);
             }
