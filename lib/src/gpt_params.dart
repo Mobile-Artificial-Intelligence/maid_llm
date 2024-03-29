@@ -1,7 +1,7 @@
 import 'dart:ffi';
 import 'dart:math';
 
-import 'maid_llm_bindings.dart';
+import 'bindings.dart';
 
 import 'package:ffi/ffi.dart';
 

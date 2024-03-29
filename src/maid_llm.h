@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include "llama.h"
+#include "llama_cpp/llama.h"
 
 typedef void log_output(const char *buffer);
 
@@ -144,8 +144,9 @@ struct maid_llm_params {
 
 struct maid_llm_chat {
     struct llama_chat_message * messages;
-    size_t n_messages;
-    int32_t length;
+    size_t length;
+    int32_t size;
+    bool add_ass;
 };
 
 struct dart_outputs {

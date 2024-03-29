@@ -14048,10 +14048,13 @@ final class maid_llm_chat extends ffi.Struct {
   external ffi.Pointer<llama_chat_message> messages;
 
   @ffi.Size()
-  external int n_messages;
+  external int length;
 
   @ffi.Int32()
-  external int length;
+  external int size;
+
+  @ffi.Bool()
+  external bool add_ass;
 }
 
 final class dart_outputs extends ffi.Struct {

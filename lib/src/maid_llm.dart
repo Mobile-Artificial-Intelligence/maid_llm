@@ -7,7 +7,7 @@ import 'package:ffi/ffi.dart';
 import 'package:langchain/langchain.dart';
 import 'gpt_params.dart';
 
-import 'maid_llm_bindings.dart';
+import 'bindings.dart';
 
 class MaidLLM {
   static Completer? _completer;
@@ -121,23 +121,28 @@ class MaidLLM {
       List<ChatMessage> messages) {
     final chatMessages = calloc<llama_chat_message>(messages.length);
 
-    int length = 0;
+    int size = 0;
+    bool addAss = false;
     for (var i = 0; i < messages.length; i++) {
       final content = messages[i].contentAsString;
+      final role = _chatMessageToRole(messages[i]);
 
       final message = calloc<llama_chat_message>()
-        ..ref.role = _chatMessageToRole(messages[i]).toNativeUtf8().cast<Char>()
+        ..ref.role = role.toNativeUtf8().cast<Char>()
         ..ref.content = content.toNativeUtf8().cast<Char>();
 
       chatMessages[i] = message.ref;
 
-      length += content.length;
+      size += content.length;
+
+      addAss = (role == "user");
     }
 
     final chat = calloc<maid_llm_chat>()
       ..ref.messages = chatMessages
-      ..ref.n_messages = messages.length
-      ..ref.length = length;
+      ..ref.length = messages.length
+      ..ref.size = size
+      ..ref.add_ass = addAss;
 
     return chat;
   }

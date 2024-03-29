@@ -105,7 +105,8 @@ EXPORT int maid_llm_prompt(struct maid_llm_params *cparams, struct maid_llm_chat
     auto passed_lock_time = std::chrono::high_resolution_clock::now();
     output->log(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
-    embd_inp = parse_messages(chat);
+    std::vector<llama_token> chat_inp = parse_messages(chat);
+    embd_inp.insert(embd_inp.end(), chat_inp.begin(), chat_inp.end());
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     output->log(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
@@ -586,15 +587,13 @@ static gpt_params from_c_params(struct maid_llm_params c_params) {
 }
 
 std::vector<llama_token> parse_messages(maid_llm_chat *chat) {
-    char chat_inp[chat->length];
+    char buffer[2 * chat->size];
 
-    bool add_ass = strcmp(chat->messages[chat->length].role, "user"); 
-
-    llama_chat_apply_template(model, nullptr, chat->messages, chat->n_messages, add_ass, chat_inp, chat->length);
+    llama_chat_apply_template(model, nullptr, chat->messages, chat->length, chat->add_ass, buffer, 2 * chat->size);
 
     bool add_bos = llama_should_add_bos_token(model);
 
-    return ::llama_tokenize(model, chat_inp, add_bos, true);
+    return ::llama_tokenize(model, buffer, add_bos, true);
 }
 
 std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
