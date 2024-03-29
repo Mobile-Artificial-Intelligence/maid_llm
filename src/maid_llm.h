@@ -12,12 +12,11 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include "llama.h"
 
-enum chat_role {
-    ROLE_SYSTEM,
-    ROLE_USER,
-    ROLE_ASSISTANT
-};
+typedef void log_output(const char *buffer);
+
+typedef void chat_output(const char *buffer, bool stop);
 
 // sampling parameters
 struct sampling_params {
@@ -143,18 +142,16 @@ struct gpt_c_params {
     char *image;                                    // path to an image file
 };
 
-struct chat_message {
-    enum chat_role role;
-    char *content;
+struct maid_llm_chat {
+    struct llama_chat_message * messages;
+    size_t length;
+    int32_t size;
+    bool add_ass;
 };
 
-typedef void dart_logger(const char *buffer);
+EXPORT int maid_llm_init(struct gpt_c_params *c_params, log_output *log_output);
 
-typedef void dart_output(const char *buffer, bool stop);
-
-EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output);
-
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output);
+EXPORT int maid_llm_prompt(struct maid_llm_chat * chat, chat_output *output, log_output *log_output);
 
 EXPORT void maid_llm_stop(void);
 

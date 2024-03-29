@@ -42,7 +42,7 @@ static bool add_bos;
 static gpt_params params;
 static llama_context_params lparams;
 
-EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
+EXPORT int maid_llm_init(struct gpt_c_params *c_params, log_output *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
 
     params = from_c_params(*c_params);
@@ -148,7 +148,7 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
     return 0;
 }
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
+EXPORT int maid_llm_prompt(struct maid_llm_chat * chat, chat_output *output, log_output *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
 
     bool is_antiprompt = false;
@@ -168,8 +168,13 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     auto passed_lock_time = std::chrono::high_resolution_clock::now();
     log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
-    // parse messages
-    parse_messages(msg_count, messages);
+    std::vector<llama_token> chat_inp = parse_messages(chat);
+    embd_inp.insert(embd_inp.end(), chat_inp.begin(), chat_inp.end());
+
+    if ((int) embd_inp.size() > n_ctx - 4) {
+        //Truncate the prompt if it's too long
+        embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
+    }
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
@@ -632,79 +637,14 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-void parse_messages(int msg_count, chat_message* messages[]) {
-    std::vector<llama_token> inp_pfx;
-    std::vector<llama_token> res_pfx;
-    std::vector<llama_token> sys_pfx;
-    std::vector<llama_token> sfx;
+std::vector<llama_token> parse_messages(maid_llm_chat *chat) {
+    char buffer[2 * chat->size];
 
-    if (params.instruct) {
-        // prefixes & suffix for instruct mode
-        inp_pfx = ::llama_tokenize(ctx, "### Instruction:\n\n",   add_bos, true);
-        res_pfx = ::llama_tokenize(ctx, "### Response:\n\n",        false, true);
-        sys_pfx = ::llama_tokenize(ctx, "### System:\n\n",        false, true);
-        sfx     = ::llama_tokenize(ctx, "\n\n",                     false, true);
-    } else if (params.chatml) {
-        // prefixes & suffix for chatml mode
-        inp_pfx = ::llama_tokenize(ctx, "<|im_start|>user\n",     add_bos, true);
-        res_pfx = ::llama_tokenize(ctx, "<|im_start|>assistant\n",  false, true);
-        sys_pfx = ::llama_tokenize(ctx, "<|im_start|>system\n",  false, true);
-        sfx     = ::llama_tokenize(ctx, "<|im_end|>\n",             false, true);
-    }
+    llama_chat_apply_template(model, nullptr, chat->messages, chat->length, chat->add_ass, buffer, 2 * chat->size);
 
-    const auto line_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
-    const auto line_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
+    bool add_bos = llama_should_add_bos_token(model);
 
-    for (int i = 0; i < msg_count; i++) {
-        chat_message* message = messages[i];
-        std::string buffer(message->content);
-
-        printf("role: %d, content: %s\n", message->role, message->content);
-
-        // Add tokens to embd only if the input buffer is non-empty
-        // Entering a empty line lets the user pass control back
-        if (buffer.length() > 1) {
-            switch (message->role) {
-                case ROLE_USER:
-                    // insert user chat prefix
-                    if (params.instruct || params.chatml) {
-                        embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
-                    }
-
-                    embd_inp.insert(embd_inp.end(), line_pfx.begin(), line_pfx.end());
-                    break;
-                case ROLE_ASSISTANT:
-                    // insert assistant chat prefix
-                    if (params.instruct || params.chatml) {
-                        embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
-                    }
-                    break;
-                case ROLE_SYSTEM:
-                    // insert system chat prefix
-                    if (params.instruct || params.chatml) {
-                        embd_inp.insert(embd_inp.end(), sys_pfx.begin(), sys_pfx.end());
-                    }
-                    break;
-            }
-
-            if (params.escape) process_escapes(buffer);            
-            const auto line_inp = ::llama_tokenize(ctx, buffer, false, false);
-            embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
-
-            if (message->role == ROLE_USER) {
-                embd_inp.insert(embd_inp.end(), line_sfx.begin(), line_sfx.end());
-            }
-
-            if (params.instruct || params.chatml) {
-                embd_inp.insert(embd_inp.end(), sfx.begin(), sfx.end());
-            }
-        }
-    }
-
-    // insert response prefix
-    if (params.instruct || params.chatml) {
-        embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
-    }
+    return ::llama_tokenize(model, buffer, add_bos, true);
 }
 
 std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {

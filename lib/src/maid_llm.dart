@@ -106,8 +106,7 @@ class MaidLLM {
 
     try {
       final ret = lib.maid_llm_prompt(
-        messages.length,
-        _toNativeChatMessages(messages), 
+        _toNativeChat(messages), 
         Pointer.fromFunction(_output), 
         Pointer.fromFunction(_logOutput)
       );
@@ -120,26 +119,45 @@ class MaidLLM {
     }
   }
 
-  static Pointer<Pointer<chat_message>> _toNativeChatMessages(
+  static Pointer<maid_llm_chat> _toNativeChat(
       List<ChatMessage> messages) {
-    final chatMessages = calloc<Pointer<chat_message>>(messages.length);
+    final chatMessages = calloc<llama_chat_message>(messages.length);
 
+    int size = 0;
+    bool addAss = false;
     for (var i = 0; i < messages.length; i++) {
-      chatMessages[i] = calloc<chat_message>()
-        ..ref.role = _chatMessageToRole(messages[i])
-        ..ref.content = messages[i].contentAsString.toNativeUtf8().cast<Char>();
+      final content = messages[i].contentAsString;
+      final role = _chatMessageToRole(messages[i]);
+
+      print('=========================$role=========================\n\n$content\n\n');
+
+      final message = calloc<llama_chat_message>()
+        ..ref.role = role.toNativeUtf8().cast<Char>()
+        ..ref.content = content.toNativeUtf8().cast<Char>();
+
+      chatMessages[i] = message.ref;
+
+      size += content.length;
+
+      addAss = (role == "user");
     }
 
-    return chatMessages;
+    final chat = calloc<maid_llm_chat>()
+      ..ref.messages = chatMessages
+      ..ref.length = messages.length
+      ..ref.size = size
+      ..ref.add_ass = addAss;
+
+    return chat;
   }
 
-  static int _chatMessageToRole(ChatMessage message) {
+  static String _chatMessageToRole(ChatMessage message) {
     if (message is SystemChatMessage) {
-      return chat_role.ROLE_SYSTEM;
+      return "system";
     } else if (message is HumanChatMessage) {
-      return chat_role.ROLE_USER;
+      return "user";
     } else if (message is AIChatMessage) {
-      return chat_role.ROLE_ASSISTANT;
+      return "assistant";
     } else {
       throw Exception('Unknown ChatMessage type');
     }
