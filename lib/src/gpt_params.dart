@@ -338,7 +338,7 @@ class GptParams {
     return gpt;
   }
 
-  void fromJson(Map<String, dynamic> json) {
+  void fromMap(Map<String, dynamic> json) {
     seed = json['seed'] ?? seed;
     nThreads = json['nThreads'] ?? nThreads;
     nThreadsDraft = json['nThreadsDraft'] ?? nThreadsDraft;
@@ -423,7 +423,7 @@ class GptParams {
     image = json['image'] ?? image;
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'seed': seed,
       'nThreads': nThreads,
