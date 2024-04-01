@@ -20,57 +20,21 @@ static std::atomic_bool stop_generation(false);
 static std::mutex continue_mutex;
 
 static llama_model * model;
-static llama_context * ctx;
-static llama_context * ctx_guidance;
-static llama_sampling_context * ctx_sampling;
-
-static gpt_params params;
-static llama_context_params lparams;
+static gpt_c_params * cparams;
 
 EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
 
-    params = from_c_params(*c_params);
+    cparams = c_params;
+    gpt_params params = from_c_params(*c_params);
 
     llama_backend_init();
     llama_numa_init(params.numa);
 
-    auto backend_init_time = std::chrono::high_resolution_clock::now();
-    log_output(("Backend init in " + get_elapsed_seconds(backend_init_time - init_start_time)).c_str());
-
-    std::tie(model, ctx) = llama_init_from_gpt_params(params);
+    llama_model_params mparams = llama_model_params_from_gpt_params(params);
+    model = llama_load_model_from_file(params.model.c_str(), mparams);
     if (model == NULL) {
         return 1;
-    } else if (ctx == NULL) {
-        llama_free_model(model);
-        return 1;
-    }
-
-    auto model_init_time = std::chrono::high_resolution_clock::now();
-    log_output(("Model init in " + get_elapsed_seconds(model_init_time - backend_init_time)).c_str());
-
-    lparams = llama_context_params_from_gpt_params(params);
-
-    auto context_init_time = std::chrono::high_resolution_clock::now();
-    log_output(("Context params init in " + get_elapsed_seconds(context_init_time - model_init_time)).c_str());
-
-    ctx_sampling = llama_sampling_init(params.sparams);
-
-    auto sampling_init_time = std::chrono::high_resolution_clock::now();
-    log_output(("Sampling init in " + get_elapsed_seconds(sampling_init_time - context_init_time)).c_str());
-
-    if (params.sparams.cfg_scale > 1.f) {
-        ctx_guidance = llama_new_context_with_model(model, lparams);
-    }
-
-    if (params.instruct) {
-        // instruct mode: insert instruction prefix to antiprompts
-        params.antiprompt.push_back("### Instruction:");
-    }
-
-    if (params.chatml) {
-        // chatml mode: insert user chat prefix to antiprompts
-        params.antiprompt.push_back("<|im_start|>user");
     }
 
     auto init_end_time = std::chrono::high_resolution_clock::now();
@@ -81,6 +45,20 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
+
+    gpt_params params = from_c_params(*cparams);
+
+    std::mt19937 rng(params.seed);
+    if (params.random_prompt) {
+        params.prompt = gpt_random_prompt(rng);
+    } 
+
+    llama_context_params lparams = llama_context_params_from_gpt_params(params);
+
+    llama_context * ctx = llama_new_context_with_model(model, lparams);
+    llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
+
+    llama_context * ctx_guidance = NULL;
     
     bool is_antiprompt = false;
     bool is_interacting = false;
@@ -112,7 +90,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
     // parse messages
-    embd_inp = parse_messages(msg_count, messages);
+    embd_inp = parse_messages(msg_count, messages, ctx);
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
@@ -136,8 +114,20 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         params.n_keep += add_bos; // always keep the BOS token
     }
 
+    if (params.instruct) {
+        // instruct mode: insert instruction prefix to antiprompts
+        params.antiprompt.push_back("### Instruction:");
+    }
+
+    if (params.chatml) {
+        // chatml mode: insert user chat prefix to antiprompts
+        params.antiprompt.push_back("<|im_start|>user");
+    }
+
     // Tokenize negative prompt
-    if (ctx_guidance) {
+    if (params.sparams.cfg_scale > 1.f) {
+        ctx_guidance = llama_new_context_with_model(model, lparams);
+
         guidance_inp = ::llama_tokenize(ctx_guidance, params.sparams.cfg_negative_prompt, add_bos, true);
 
         std::vector<llama_token> original_inp = ::llama_tokenize(ctx, params.prompt, add_bos, true);
@@ -152,6 +142,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
             output("", true);
+            llama_free(ctx);
+            llama_free(ctx_guidance);
+            llama_sampling_free(ctx_sampling);
             return 0;  // or any other cleanup you want to do
         }
 
@@ -188,7 +181,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
                     n_past -= n_discard;
 
-                    if (ctx_guidance) {
+                    if (ctx_guidance != NULL) {
                         n_past_guidance -= n_discard;
                     }
                 }
@@ -211,7 +204,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
             // evaluate tokens in batches
             // embd is typically prepared beforehand to fit within a batch, but not always
-            if (ctx_guidance) {
+            if (ctx_guidance != NULL) {
                 int input_size = 0;
                 llama_token * input_buf = NULL;
 
@@ -240,6 +233,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                     int n_eval = std::min(input_size - i, params.n_batch);
                     if (llama_decode(ctx_guidance, llama_batch_get_one(input_buf + i, n_eval, n_past_guidance, 0))) {
                         output("", true);
+                        llama_free(ctx);
+                        llama_free(ctx_guidance);
+                        llama_sampling_free(ctx_sampling);
                         return 1;
                     }
 
@@ -255,6 +251,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
                 if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
                     output("", true);
+                    llama_free(ctx);
+                    llama_free(ctx_guidance);
+                    llama_sampling_free(ctx_sampling);
                     return 1;
                 }
 
@@ -398,6 +397,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     }
 
     output("", true);
+    llama_free(ctx);
+    llama_free(ctx_guidance);
+    llama_sampling_free(ctx_sampling);
     return 0;
 }
 
@@ -407,11 +409,7 @@ EXPORT void maid_llm_stop(void) {
 
 EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
-    llama_print_timings(ctx);
-    llama_free(ctx);
-    llama_free(ctx_guidance);
     llama_free_model(model);
-    llama_sampling_free(ctx_sampling);
     llama_backend_free();
 }
 
@@ -604,7 +602,7 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[]) {
+std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[], llama_context * ctx) {
     std::vector<llama_token> embd_inp;
 
     std::vector<llama_token> inp_pfx;
@@ -613,6 +611,8 @@ std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[])
     std::vector<llama_token> sfx;
 
     bool add_bos = llama_should_add_bos_token(model);
+
+    gpt_params params = from_c_params(*cparams);
 
     if (params.instruct) {
         // prefixes & suffix for instruct mode
