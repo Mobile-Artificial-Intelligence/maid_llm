@@ -33,12 +33,6 @@ static int guidance_offset;
 static int original_prompt_len;
 static int n_past_guidance;
 
-static int n_remain;
-static int n_past;
-static int n_consumed; // number of tokens consumed by sampling
-
-static bool add_bos;
-
 static gpt_params params;
 static llama_context_params lparams;
 
@@ -61,9 +55,6 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
     guidance_offset = 0;
     original_prompt_len = 0;
     n_past_guidance = 0;
-    n_past       = 0;
-    n_consumed   = 0;
-    n_remain = params.n_predict;
 
     std::tie(model, ctx) = llama_init_from_gpt_params(params);
     if (model == NULL) {
@@ -93,7 +84,7 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
     auto guidance_init_time = std::chrono::high_resolution_clock::now();
     log_output(("Guidance init in " + get_elapsed_seconds(guidance_init_time - sampling_init_time)).c_str());
 
-    add_bos = llama_should_add_bos_token(model);
+    bool add_bos = llama_should_add_bos_token(model);
 
     // tokenize the prompt
     embd_inp = ::llama_tokenize(model, params.prompt, add_bos, true);
@@ -154,9 +145,13 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     bool is_antiprompt = false;
     bool is_interacting = false;
 
+    int n_consumed = 0;
+    int n_past = 0;
+    int n_remain = params.n_predict;
+    int ga_i = 0;
+
     const int ga_n = params.grp_attn_n;
     const int ga_w = params.grp_attn_w;
-    int ga_i = 0;
     const int n_ctx = llama_n_ctx(ctx);
 
     std::vector<llama_token> embd_cache;
@@ -638,17 +633,19 @@ void parse_messages(int msg_count, chat_message* messages[]) {
     std::vector<llama_token> sys_pfx;
     std::vector<llama_token> sfx;
 
+    bool add_bos = llama_should_add_bos_token(model);
+
     if (params.instruct) {
         // prefixes & suffix for instruct mode
         inp_pfx = ::llama_tokenize(ctx, "### Instruction:\n\n",   add_bos, true);
         res_pfx = ::llama_tokenize(ctx, "### Response:\n\n",        false, true);
-        sys_pfx = ::llama_tokenize(ctx, "### System:\n\n",        false, true);
+        sys_pfx = ::llama_tokenize(ctx, "### System:\n\n",          false, true);
         sfx     = ::llama_tokenize(ctx, "\n\n",                     false, true);
     } else if (params.chatml) {
         // prefixes & suffix for chatml mode
         inp_pfx = ::llama_tokenize(ctx, "<|im_start|>user\n",     add_bos, true);
         res_pfx = ::llama_tokenize(ctx, "<|im_start|>assistant\n",  false, true);
-        sys_pfx = ::llama_tokenize(ctx, "<|im_start|>system\n",  false, true);
+        sys_pfx = ::llama_tokenize(ctx, "<|im_start|>system\n",     false, true);
         sfx     = ::llama_tokenize(ctx, "<|im_end|>\n",             false, true);
     }
 
