@@ -24,11 +24,6 @@ static llama_context * ctx;
 static llama_context * ctx_guidance;
 static llama_sampling_context * ctx_sampling;
 
-static std::vector<llama_token> embd;
-static std::vector<llama_token> embd_inp;
-static std::vector<llama_token> embd_guidance;
-static std::vector<llama_token> guidance_inp;
-
 static int guidance_offset;
 static int original_prompt_len;
 static int n_past_guidance;
@@ -81,48 +76,6 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
         ctx_guidance = llama_new_context_with_model(model, lparams);
     }
 
-    auto guidance_init_time = std::chrono::high_resolution_clock::now();
-    log_output(("Guidance init in " + get_elapsed_seconds(guidance_init_time - sampling_init_time)).c_str());
-
-    bool add_bos = llama_should_add_bos_token(model);
-
-    // tokenize the prompt
-    embd_inp = ::llama_tokenize(model, params.prompt, add_bos, true);
-
-    auto tokenize_prompt_time = std::chrono::high_resolution_clock::now();
-    log_output(("Tokenize prompt in " + get_elapsed_seconds(tokenize_prompt_time - guidance_init_time)).c_str());
-
-    // Should not run without any tokens
-    if (embd_inp.empty()) {
-        embd_inp.push_back(llama_token_bos(model));
-        LOG("embd_inp was considered empty and bos was added: %s\n", LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp).c_str());
-    }
-
-    // Tokenize negative prompt
-    if (ctx_guidance) {
-        guidance_inp = ::llama_tokenize(ctx_guidance, params.sparams.cfg_negative_prompt, add_bos, true);
-
-        std::vector<llama_token> original_inp = ::llama_tokenize(ctx, params.prompt, add_bos, true);
-
-        original_prompt_len = original_inp.size();
-        guidance_offset = (int)guidance_inp.size() - original_prompt_len;
-    }
-
-    auto tokenize_negative_prompt_time = std::chrono::high_resolution_clock::now();
-    log_output(("Tokenize negative prompt in " + get_elapsed_seconds(tokenize_negative_prompt_time - tokenize_prompt_time)).c_str());
-
-    if ((int) embd_inp.size() > lparams.n_ctx - 4) {
-        //Truncate the prompt if it's too long
-        embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (lparams.n_ctx - 4)));
-    }
-
-    // number of tokens to keep when resetting context
-    if (params.n_keep < 0 || params.n_keep > (int) embd_inp.size() || params.instruct || params.chatml) {
-        params.n_keep = (int)embd_inp.size();
-    } else {
-        params.n_keep += add_bos; // always keep the BOS token
-    }
-
     if (params.instruct) {
         // instruct mode: insert instruction prefix to antiprompts
         params.antiprompt.push_back("### Instruction:");
@@ -141,9 +94,10 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
-
+    
     bool is_antiprompt = false;
     bool is_interacting = false;
+    bool add_bos = llama_should_add_bos_token(model);
 
     int n_consumed = 0;
     int n_past = 0;
@@ -154,8 +108,12 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     const int ga_w = params.grp_attn_w;
     const int n_ctx = llama_n_ctx(ctx);
 
+    std::vector<llama_token> embd;
+    std::vector<llama_token> embd_inp;
     std::vector<llama_token> embd_cache;
     std::vector<llama_token> embd_out;
+    std::vector<llama_token> embd_guidance;
+    std::vector<llama_token> guidance_inp;  
 
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
@@ -164,10 +122,39 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
     // parse messages
-    parse_messages(msg_count, messages);
+    embd_inp = parse_messages(msg_count, messages);
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
     log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
+    
+    //Truncate the prompt if it's too long
+    if ((int) embd_inp.size() > lparams.n_ctx - 4) {
+        embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (lparams.n_ctx - 4)));
+        log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
+    } 
+    
+    // Should not run without any tokens
+    if (embd_inp.empty()) {
+        embd_inp.push_back(llama_token_bos(model));
+        log_output(("embd_inp was considered empty and bos was added: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
+    }
+
+    // number of tokens to keep when resetting context
+    if (params.n_keep < 0 || params.n_keep > (int) embd_inp.size() || params.instruct || params.chatml) {
+        params.n_keep = (int)embd_inp.size();
+    } else {
+        params.n_keep += add_bos; // always keep the BOS token
+    }
+
+    // Tokenize negative prompt
+    if (ctx_guidance) {
+        guidance_inp = ::llama_tokenize(ctx_guidance, params.sparams.cfg_negative_prompt, add_bos, true);
+
+        std::vector<llama_token> original_inp = ::llama_tokenize(ctx, params.prompt, add_bos, true);
+
+        original_prompt_len = original_inp.size();
+        guidance_offset = (int)guidance_inp.size() - original_prompt_len;
+    }
 
     bool has_output = false;
 
@@ -627,7 +614,9 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-void parse_messages(int msg_count, chat_message* messages[]) {
+std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[]) {
+    std::vector<llama_token> embd_inp;
+
     std::vector<llama_token> inp_pfx;
     std::vector<llama_token> res_pfx;
     std::vector<llama_token> sys_pfx;
@@ -702,6 +691,8 @@ void parse_messages(int msg_count, chat_message* messages[]) {
     if (params.instruct || params.chatml) {
         embd_inp.insert(embd_inp.end(), res_pfx.begin(), res_pfx.end());
     }
+
+    return embd_inp;
 }
 
 std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
