@@ -24,10 +24,6 @@ static llama_context * ctx;
 static llama_context * ctx_guidance;
 static llama_sampling_context * ctx_sampling;
 
-static int guidance_offset;
-static int original_prompt_len;
-static int n_past_guidance;
-
 static gpt_params params;
 static llama_context_params lparams;
 
@@ -36,20 +32,11 @@ EXPORT int maid_llm_init(struct gpt_c_params *c_params, dart_logger *log_output)
 
     params = from_c_params(*c_params);
 
-    std::mt19937 rng(params.seed);
-    if (params.random_prompt) {
-        params.prompt = gpt_random_prompt(rng);
-    }
-
     llama_backend_init();
     llama_numa_init(params.numa);
 
     auto backend_init_time = std::chrono::high_resolution_clock::now();
     log_output(("Backend init in " + get_elapsed_seconds(backend_init_time - init_start_time)).c_str());
-
-    guidance_offset = 0;
-    original_prompt_len = 0;
-    n_past_guidance = 0;
 
     std::tie(model, ctx) = llama_init_from_gpt_params(params);
     if (model == NULL) {
@@ -99,6 +86,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     bool is_interacting = false;
     bool add_bos = llama_should_add_bos_token(model);
 
+    int guidance_offset = 0;
+    int original_prompt_len = 0;
+    int n_past_guidance = 0;    
     int n_consumed = 0;
     int n_past = 0;
     int n_remain = params.n_predict;
