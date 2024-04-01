@@ -141,10 +141,10 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
-            output("", true);
             llama_free(ctx);
             llama_free(ctx_guidance);
             llama_sampling_free(ctx_sampling);
+            output("", true);
             return 0;  // or any other cleanup you want to do
         }
 
@@ -232,10 +232,10 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 for (int i = 0; i < input_size; i += params.n_batch) {
                     int n_eval = std::min(input_size - i, params.n_batch);
                     if (llama_decode(ctx_guidance, llama_batch_get_one(input_buf + i, n_eval, n_past_guidance, 0))) {
-                        output("", true);
                         llama_free(ctx);
                         llama_free(ctx_guidance);
                         llama_sampling_free(ctx_sampling);
+                        output("", true);
                         return 1;
                     }
 
@@ -250,10 +250,10 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 }
 
                 if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
-                    output("", true);
                     llama_free(ctx);
                     llama_free(ctx_guidance);
                     llama_sampling_free(ctx_sampling);
+                    output("", true);
                     return 1;
                 }
 
@@ -396,10 +396,10 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         }
     }
 
-    output("", true);
     llama_free(ctx);
     llama_free(ctx_guidance);
     llama_sampling_free(ctx_sampling);
+    output("", true);
     return 0;
 }
 
