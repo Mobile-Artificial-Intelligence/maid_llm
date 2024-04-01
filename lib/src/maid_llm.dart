@@ -10,6 +10,7 @@ import 'gpt_params.dart';
 import 'bindings.dart';
 
 class MaidLLM {
+  static List<ChatMessage>? _lastMessages;
   static Completer? _completer;
   static SendPort? _sendPort;
   static maid_llm? _lib;
@@ -64,13 +65,42 @@ class MaidLLM {
   }
 
   Stream<String> prompt(List<ChatMessage> messages) async* {
+    List<ChatMessage> cleanedMessages = messages;
+    
+    if (_lastMessages != null) {      
+      bool same = true;
+
+      if (_lastMessages!.length > messages.length - 3) {
+        same = false;
+      } 
+      else {
+        // Check is all previous messages are the same
+        for (var i = 0; i < messages.length - 3; i++) {
+          if (_lastMessages![i].contentAsString != messages[i].contentAsString) {
+            same = false;
+            break;
+          }
+        }
+      }
+
+      // If messages are the same, only send the last message
+      if (same) {
+        cleanedMessages = messages.sublist(messages.length);
+      }
+
+      print('${same ? "Same" : "Different"} messages');
+    }
+
+    _lastMessages = messages;
+    
+    // Ensure initialization is complete
     await _completer!.future;
     _completer = Completer();
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
-    final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
+    final isolate = await Isolate.spawn(_promptIsolate, (cleanedMessages, _sendPort!));
 
     await for (var data in receivePort) {
       if (data is (String, bool)) {
