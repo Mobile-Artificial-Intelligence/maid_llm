@@ -87,8 +87,6 @@ class MaidLLM {
       if (same) {
         cleanedMessages = messages.sublist(messages.length);
       }
-
-      print('${same ? "Same" : "Different"} messages');
     }
 
     _lastMessages = messages;
@@ -124,10 +122,10 @@ class MaidLLM {
     final (params, sendPort) = args;
     _sendPort = sendPort;
 
-    final ret =
-        lib.maid_llm_init(params.get(), Pointer.fromFunction(_logOutput));
+    final ret1 = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
+    final ret2 = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
 
-    _sendPort!.send(ret);
+    _sendPort!.send(ret1 + ret2);
   }
 
   static void _promptIsolate((List<ChatMessage>, SendPort) args) {
