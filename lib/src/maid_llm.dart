@@ -70,12 +70,14 @@ class MaidLLM {
     if (_lastMessages != null) {      
       bool same = true;
 
-      if (_lastMessages!.length > messages.length - 3) {
+      int difference = messages.length - _lastMessages!.length;
+
+      if (difference <= 0) {
         same = false;
       } 
       else {
         // Check is all previous messages are the same
-        for (var i = 0; i < messages.length - 3; i++) {
+        for (var i = 0; i < messages.length - difference; i++) {
           if (_lastMessages![i].contentAsString != messages[i].contentAsString) {
             same = false;
             break;
@@ -85,7 +87,7 @@ class MaidLLM {
 
       // If messages are the same, only send the last message
       if (same) {
-        cleanedMessages = messages.sublist(messages.length);
+        cleanedMessages = messages.sublist(messages.length - difference + 1);
       }
     }
 
