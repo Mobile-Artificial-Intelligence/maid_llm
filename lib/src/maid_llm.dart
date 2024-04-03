@@ -10,11 +10,12 @@ import 'gpt_params.dart';
 import 'bindings.dart';
 
 class MaidLLM {
-  static List<ChatMessage>? _lastMessages;
   static Completer? _completer;
   static SendPort? _sendPort;
   static maid_llm? _lib;
   static void Function(String)? _log;
+
+  List<ChatMessage>? _lastMessages;
 
   /// Getter for the Llama library.
   ///

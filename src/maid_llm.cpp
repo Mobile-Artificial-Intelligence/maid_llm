@@ -26,6 +26,9 @@ static llama_context * ctx;
 static llama_context * ctx_guidance;
 static llama_sampling_context * ctx_sampling;
 
+static int n_past;
+static int n_past_guidance;
+
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
@@ -42,7 +45,7 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
     }
 
     auto init_end_time = std::chrono::high_resolution_clock::now();
-    log_output(("Init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
+    log_output(("Model init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
 
     return 0;
 }
@@ -59,8 +62,11 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
         ctx_guidance = llama_new_context_with_model(model, lparams);
     }
 
+    n_past = 0;
+    n_past_guidance = 0;
+
     auto init_end_time = std::chrono::high_resolution_clock::now();
-    log_output(("Init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
+    log_output(("Context init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
 
     return 0;
 }
@@ -80,12 +86,11 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     bool add_bos = llama_should_add_bos_token(model);
 
     int guidance_offset = 0;
-    int original_prompt_len = 0;
-    int n_past_guidance = 0;    
+    int original_prompt_len = 0; 
     int n_consumed = 0;
-    int n_past = 0;
     int n_remain = params.n_predict;
     int ga_i = 0;
+    int n_prior = n_past;
 
     const int ga_n = params.grp_attn_n;
     const int ga_w = params.grp_attn_w;
@@ -316,7 +321,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             }
         }
 
-        if ((n_past - 3 >= (int) embd_inp.size() && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
+        if ((n_past - 3 >= (int) embd_inp.size() + n_prior && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
             for (auto id : embd_out) {
                 output(llama_token_to_piece(ctx, id).c_str(), false);
             }
