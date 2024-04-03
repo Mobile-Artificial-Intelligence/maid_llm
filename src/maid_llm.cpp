@@ -91,6 +91,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     int n_remain = params.n_predict;
     int ga_i = 0;
     int n_prior = n_past;
+    int terminator_length = 0;
 
     const int ga_n = params.grp_attn_n;
     const int ga_w = params.grp_attn_w;
@@ -136,11 +137,16 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     if (params.instruct) {
         // instruct mode: insert instruction prefix to antiprompts
         params.antiprompt.push_back("### Instruction:");
+        params.antiprompt.push_back("\n\n\n\n\n");
+        terminator_length = llama_tokenize(ctx, "### Instruction:", false, true).size();
     }
 
     if (params.chatml) {
         // chatml mode: insert user chat prefix to antiprompts
-        params.antiprompt.push_back("<|im_start|>user");
+
+        params.antiprompt.push_back("<|im_end|>");
+        params.antiprompt.push_back("\n\n\n\n\n");
+        terminator_length = llama_tokenize(ctx, "<|im_end|>", false, true).size();
     }
 
     // Tokenize negative prompt
@@ -309,19 +315,19 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             log_output(("Pushed tokens in " + get_elapsed_seconds(push_end_time - push_start_time)).c_str());
         }
 
-        // Cache the last 4 tokens for display
+        // Cache the last terminator_length tokens for display
         // This is done to ensure the antiprompt is detected correctly
         embd_cache.insert(embd_cache.end(), embd.begin(), embd.end());
-        if ((int) embd_cache.size() > 4) {
+        if ((int) embd_cache.size() > terminator_length) {
             // display text
-            while ((int) embd_cache.size() > 4) {
+            while ((int) embd_cache.size() > terminator_length) {
                 auto id = embd_cache.front();
                 embd_out.push_back(id);
                 embd_cache.erase(embd_cache.begin());
             }
         }
 
-        if ((n_past - 3 >= (int) embd_inp.size() + n_prior && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
+        if ((n_past - terminator_length + 1 >= (int) embd_inp.size() + n_prior && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
             for (auto id : embd_out) {
                 output(llama_token_to_piece(ctx, id).c_str(), false);
             }
