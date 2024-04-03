@@ -24,7 +24,6 @@ static gpt_params params;
 
 static llama_context * ctx;
 static llama_context * ctx_guidance;
-static llama_sampling_context * ctx_sampling;
 
 static int n_past;
 static int n_past_guidance;
@@ -73,8 +72,6 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
         ctx_guidance = llama_new_context_with_model(model, lparams);
     }
 
-    ctx_sampling = llama_sampling_init(params.sparams);
-
     n_past = 0;
     n_past_guidance = 0;
 
@@ -89,6 +86,8 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
+
+    llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
     std::mt19937 rng(params.seed);
     if (params.random_prompt) {
