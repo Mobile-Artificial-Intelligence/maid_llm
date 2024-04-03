@@ -113,13 +113,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     embd_inp = parse_messages(msg_count, messages, ctx);
 
     auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
-    log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
-    
-    //Truncate the prompt if it's too long
-    //if ((int) embd_inp.size() > n_ctx - 4) {
-    //    embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
-    //    log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
-    //} 
+    log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str()); 
     
     // Should not run without any tokens
     if (embd_inp.empty()) {
@@ -162,13 +156,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     bool has_output = false;
 
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
-        if (stop_generation.load()) {
-            stop_generation.store(false);  // reset for future use
-            llama_sampling_free(ctx_sampling);
-            output("", true);
-            return 0;  // or any other cleanup you want to do
-        }
-
         // predict
         if (!embd.empty()) {
             auto prediction_start_time = std::chrono::high_resolution_clock::now();
@@ -342,6 +329,11 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         }
 
         embd_out.clear();
+
+        if (stop_generation.load()) {
+            stop_generation.store(false);  // reset for future use
+            break;
+        }
 
         // if not currently processing queued inputs;
         if ((int) embd_inp.size() <= n_consumed) {
