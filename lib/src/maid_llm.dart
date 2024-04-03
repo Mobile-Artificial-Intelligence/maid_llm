@@ -54,7 +54,33 @@ class MaidLLM {
           if (data == 0) {
             _completer!.complete();
           } else {
-            _completer!.completeError(Exception('Failed to initialize LLM'));
+            _completer!.completeError(Exception('Failed to initialize LLM, Exception Uncaught'));
+          } 
+        } else if (data is String && _log != null) {
+          _log!(data);
+        }
+      });
+
+      await _completer!.future;
+    });
+  }
+
+  void reset(GptParams params) async {
+    _log?.call('Resetting LLM');
+
+    await _completer!.future;
+    _completer = Completer();
+
+    final receivePort = ReceivePort();
+    _sendPort = receivePort.sendPort;
+
+    Isolate.spawn(_resetIsolate, (params, _sendPort!)).then((value) async {
+      receivePort.listen((data) {
+        if (data is int) {
+          if (data == 0) {
+            _completer!.complete();
+          } else {
+            _completer!.completeError(Exception('Failed to reset LLM, Exception Uncaught'));
           } 
         } else if (data is String && _log != null) {
           _log!(data);
@@ -125,10 +151,38 @@ class MaidLLM {
     final (params, sendPort) = args;
     _sendPort = sendPort;
 
-    final ret1 = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
-    final ret2 = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
+    try {
+      final ret1 = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
+      if (ret1 != 0) {
+        throw Exception('Failed to initialize model');
+      }
 
-    _sendPort!.send(ret1 + ret2);
+      final ret2 = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
+      if (ret2 != 0) {
+        throw Exception('Failed to initialize context');
+      }
+
+      _sendPort!.send(ret1 + ret2);
+    } catch (e) {
+      _sendPort!.send(e.toString());
+    }
+  }
+
+  static void _resetIsolate((GptParams, SendPort) args) {
+    final (params, sendPort) = args;
+    _sendPort = sendPort;
+
+    try {
+      final ret = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
+
+      if (ret != 0) {
+        throw Exception('Failed to reset');
+      }
+
+      _sendPort!.send(ret);
+    } catch (e) {
+      _sendPort!.send(e.toString());
+    }
   }
 
   static void _promptIsolate((List<ChatMessage>, SendPort) args) {
@@ -179,7 +233,8 @@ class MaidLLM {
   static void _output(Pointer<Char> buffer, bool stop) {
     try {
       _sendPort!.send((buffer.cast<Utf8>().toDartString(), stop));
-    } catch (e) {
+    } 
+    catch (e) {
       _sendPort!.send(e.toString());
     }
   }

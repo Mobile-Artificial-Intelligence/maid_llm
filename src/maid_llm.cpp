@@ -24,6 +24,7 @@ static gpt_params params;
 
 static llama_context * ctx;
 static llama_context * ctx_guidance;
+static llama_sampling_context * ctx_sampling;
 
 static int n_past;
 static int n_past_guidance;
@@ -43,6 +44,18 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
         return 1;
     }
 
+    if (params.instruct) {
+        // instruct mode: insert instruction prefix to antiprompts
+        params.antiprompt.push_back("### Instruction:");
+    }
+
+    if (params.chatml) {
+        // chatml mode: insert user chat prefix to antiprompts
+        params.antiprompt.push_back("<|im_end|>");
+    }
+
+    params.antiprompt.push_back("\n\n\n\n\n");
+
     auto init_end_time = std::chrono::high_resolution_clock::now();
     log_output(("Model init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
 
@@ -60,6 +73,8 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
         ctx_guidance = llama_new_context_with_model(model, lparams);
     }
 
+    ctx_sampling = llama_sampling_init(params.sparams);
+
     n_past = 0;
     n_past_guidance = 0;
 
@@ -74,8 +89,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
-
-    llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
     std::mt19937 rng(params.seed);
     if (params.random_prompt) {
@@ -96,13 +109,17 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     int n_prior = n_past;
     int terminator_length = 0;
 
+    for (auto antiprompt : params.antiprompt) {
+        terminator_length = std::max<int>(terminator_length, antiprompt.length());
+    }
+
     const int ga_n = params.grp_attn_n;
     const int ga_w = params.grp_attn_w;
 
     std::vector<llama_token> embd;
-    std::vector<llama_token> embd_inp;
-    std::vector<llama_token> embd_cache;
-    std::vector<llama_token> embd_out;
+    std::vector<llama_token> embd_inp;      // input buffer
+    std::vector<llama_token> embd_cache;    // cache for the last terminator_length tokens
+    std::vector<llama_token> embd_out;      // output buffer
     std::vector<llama_token> embd_guidance;
     std::vector<llama_token> guidance_inp;  
 
@@ -112,8 +129,20 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     // parse messages
     embd_inp = parse_messages(msg_count, messages, ctx);
 
-    auto finished_message_parsing_time = std::chrono::high_resolution_clock::now();
-    log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str()); 
+    //Truncate the prompt if it's too long
+    if ((int) embd_inp.size() > n_ctx - 4) {
+        // store the original input size
+        int input_size = embd_inp.size();
+
+        // truncate the input
+        embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
+
+        // adjust n_past to account for truncation
+        n_past -= (input_size - embd_inp.size());
+
+        // log the truncation
+        log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
+    } 
     
     // Should not run without any tokens
     if (embd_inp.empty()) {
@@ -126,21 +155,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         params.n_keep = (int)embd_inp.size();
     } else {
         params.n_keep += add_bos; // always keep the BOS token
-    }
-
-    if (params.instruct) {
-        // instruct mode: insert instruction prefix to antiprompts
-        params.antiprompt.push_back("### Instruction:");
-        params.antiprompt.push_back("\n\n\n\n\n");
-        terminator_length = llama_tokenize(ctx, "### Instruction:", false, true).size();
-    }
-
-    if (params.chatml) {
-        // chatml mode: insert user chat prefix to antiprompts
-
-        params.antiprompt.push_back("<|im_end|>");
-        params.antiprompt.push_back("\n\n\n\n\n");
-        terminator_length = llama_tokenize(ctx, "<|im_end|>", false, true).size();
     }
 
     // Tokenize negative prompt
@@ -240,6 +254,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 for (int i = 0; i < input_size; i += params.n_batch) {
                     int n_eval = std::min(input_size - i, params.n_batch);
                     if (llama_decode(ctx_guidance, llama_batch_get_one(input_buf + i, n_eval, n_past_guidance, 0))) {
+                        log_output("Error decoding tokens: 1");
                         output("", true);
                         return 1;
                     }
@@ -255,6 +270,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
                 }
 
                 if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
+                    log_output("Error decoding tokens: 2");
                     output("", true);
                     return 1;
                 }
@@ -404,6 +420,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     }
 
     llama_sampling_free(ctx_sampling);
+    log_output(("Prompt force stopped in " + get_elapsed_seconds(std::chrono::high_resolution_clock::now() - prompt_start_time)).c_str());
     output("", true);
     return 0;
 }
