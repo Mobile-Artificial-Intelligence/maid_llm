@@ -24,7 +24,6 @@ static gpt_params params;
 
 static llama_context * ctx;
 static llama_context * ctx_guidance;
-static llama_sampling_context * ctx_sampling;
 
 static int n_past;
 static int n_past_guidance;
@@ -56,7 +55,6 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
     llama_context_params lparams = llama_context_params_from_gpt_params(params);
 
     ctx = llama_new_context_with_model(model, lparams);
-    ctx_sampling = llama_sampling_init(params.sparams);
 
     if (params.sparams.cfg_scale > 1.f) {
         ctx_guidance = llama_new_context_with_model(model, lparams);
@@ -73,6 +71,11 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
 
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
+
+    std::lock_guard<std::mutex> lock(continue_mutex);
+    stop_generation.store(false);
+
+    llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
     std::mt19937 rng(params.seed);
     if (params.random_prompt) {
@@ -103,9 +106,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     std::vector<llama_token> embd_guidance;
     std::vector<llama_token> guidance_inp;  
 
-    std::lock_guard<std::mutex> lock(continue_mutex);
-    stop_generation.store(false);
-
     auto passed_lock_time = std::chrono::high_resolution_clock::now();
     log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
@@ -116,10 +116,10 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     log_output(("Parsed messages in " + get_elapsed_seconds(finished_message_parsing_time - passed_lock_time)).c_str());
     
     //Truncate the prompt if it's too long
-    if ((int) embd_inp.size() > n_ctx - 4) {
-        embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
-        log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
-    } 
+    //if ((int) embd_inp.size() > n_ctx - 4) {
+    //    embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
+    //    log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
+    //} 
     
     // Should not run without any tokens
     if (embd_inp.empty()) {
@@ -164,6 +164,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
+            llama_sampling_free(ctx_sampling);
             output("", true);
             return 0;  // or any other cleanup you want to do
         }
@@ -410,6 +411,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         }
     }
 
+    llama_sampling_free(ctx_sampling);
     output("", true);
     return 0;
 }
@@ -422,7 +424,6 @@ EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
     llama_free(ctx);
     llama_free(ctx_guidance);
-    llama_sampling_free(ctx_sampling);
     llama_free_model(model);
     llama_backend_free();
 }
