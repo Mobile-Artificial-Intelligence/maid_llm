@@ -68,7 +68,7 @@ class MaidLLM {
   void reset(GptParams params) async {
     _log?.call('Resetting LLM');
 
-    await _completer!.future;
+    await _completer?.future;
     _completer = Completer();
 
     final receivePort = ReceivePort();
@@ -121,7 +121,7 @@ class MaidLLM {
     _lastMessages = messages;
     
     // Ensure initialization is complete
-    await _completer!.future;
+    await _completer?.future;
     _completer = Completer();
 
     final receivePort = ReceivePort();

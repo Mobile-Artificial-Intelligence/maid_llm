@@ -23,10 +23,6 @@ static llama_model * model;
 static gpt_params params;
 
 static llama_context * ctx;
-static llama_context * ctx_guidance;
-
-static int n_past;
-static int n_past_guidance;
 
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output) {
@@ -68,13 +64,6 @@ EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log
 
     ctx = llama_new_context_with_model(model, lparams);
 
-    if (params.sparams.cfg_scale > 1.f) {
-        ctx_guidance = llama_new_context_with_model(model, lparams);
-    }
-
-    n_past = 0;
-    n_past_guidance = 0;
-
     auto init_end_time = std::chrono::high_resolution_clock::now();
     log_output(("Context init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
 
@@ -89,55 +78,28 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
-    std::mt19937 rng(params.seed);
-    if (params.random_prompt) {
-        params.prompt = gpt_random_prompt(rng);
-    }
+    llama_batch batch = llama_batch_init(params.n_batch, 0, params.n_sequences);
 
     const int n_ctx = llama_n_ctx(ctx);
     
-    bool is_antiprompt = false;
-    bool is_interacting = false;
     bool add_bos = llama_should_add_bos_token(model);
 
-    int guidance_offset = 0;
-    int original_prompt_len = 0; 
-    int n_consumed = 0;
-    int n_remain = params.n_predict;
-    int ga_i = 0;
-    int n_prior = n_past;
-    int terminator_length = 0;
+    int n_past = 0;
+    int n_sample = n_ctx;
 
-    for (auto antiprompt : params.antiprompt) {
-        terminator_length = std::max<int>(terminator_length, antiprompt.length());
+    if (n_sample <= 0) {
+        n_sample = n_ctx;
     }
 
-    const int ga_n = params.grp_attn_n;
-    const int ga_w = params.grp_attn_w;
-
-    std::vector<llama_token> embd;
     std::vector<llama_token> embd_inp;      // input buffer
-    std::vector<llama_token> embd_cache;    // cache for the last terminator_length tokens
-    std::vector<llama_token> embd_out;      // output buffer
-    std::vector<llama_token> embd_guidance;
-    std::vector<llama_token> guidance_inp;  
-
-    auto passed_lock_time = std::chrono::high_resolution_clock::now();
-    log_output(("Passed lock in " + get_elapsed_seconds(passed_lock_time - prompt_start_time)).c_str());
 
     // parse messages
     embd_inp = parse_messages(msg_count, messages, ctx);
 
     //Truncate the prompt if it's too long
     if ((int) embd_inp.size() > n_ctx - 4) {
-        // store the original input size
-        int input_size = embd_inp.size();
-
         // truncate the input
         embd_inp.erase(embd_inp.begin(), embd_inp.begin() + (embd_inp.size() - (n_ctx - 4)));
-
-        // adjust n_past to account for truncation
-        n_past -= (input_size - embd_inp.size());
 
         // log the truncation
         log_output(("embd_inp was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, embd_inp)).c_str());
@@ -156,269 +118,51 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         params.n_keep += add_bos; // always keep the BOS token
     }
 
-    // Tokenize negative prompt
-    if (params.sparams.cfg_scale > 1.f) {
-        guidance_inp = ::llama_tokenize(ctx_guidance, params.sparams.cfg_negative_prompt, add_bos, true);
-
-        std::vector<llama_token> original_inp = ::llama_tokenize(ctx, params.prompt, add_bos, true);
-
-        original_prompt_len = original_inp.size();
-        guidance_offset = (int)guidance_inp.size() - original_prompt_len;
+    // evaluate the initial prompt
+    for (size_t i = 0; i < embd_inp.size(); i++) {
+        llama_batch_add(batch, embd_inp[i], i, { 0 }, false);
     }
 
-    bool has_output = false;
+    if (llama_decode(ctx, batch) != 0) {
+        log_output("Initial decode failed");
+        return 1;
+    }
 
-    while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
-        // predict
-        if (!embd.empty()) {
-            auto prediction_start_time = std::chrono::high_resolution_clock::now();
+    llama_token output_token = llama_token_bos(model);
 
-            // Note: n_ctx - 4 here is to match the logic for commandline prompt handling via
-            // --prompt or --file which uses the same value.
-            int max_embd_size = n_ctx - 4;
-
-            // Ensure the input doesn't exceed the context size by truncating embd if necessary.
-            if ((int) embd.size() > max_embd_size) {
-                const int skipped_tokens = (int) embd.size() - max_embd_size;
-                embd.resize(max_embd_size);
-            }
-
-            if (ga_n == 1) {
-                // infinite text generation via context shifting
-                // if we run out of context:
-                // - take the n_keep first tokens from the original prompt (via n_past)
-                // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
-                if (n_past + (int) embd.size() + std::max<int>(0, guidance_offset) > n_ctx) {
-                    if (params.n_predict == -2) {
-                        break;
-                    }
-
-                    const int n_left    = n_past - params.n_keep;
-                    const int n_discard = n_left/2;
-
-
-                    llama_kv_cache_seq_rm (ctx, 0, params.n_keep, params.n_keep + n_discard);
-                    llama_kv_cache_seq_add(ctx, 0, params.n_keep + n_discard, n_past, -n_discard);
-
-                    n_past -= n_discard;
-
-                    if (ctx_guidance != NULL) {
-                        n_past_guidance -= n_discard;
-                    }
-                }
-            } else {
-                // context extension via Self-Extend
-                while (n_past >= ga_i + ga_w) {
-                    const int ib = (ga_n*ga_i)/ga_w;
-                    const int bd = (ga_w/ga_n)*(ga_n - 1);
-                    const int dd = (ga_w/ga_n) - ib*bd - ga_w;
-
-                    llama_kv_cache_seq_add(ctx, 0, ga_i,                n_past,              ib*bd);
-                    llama_kv_cache_seq_div(ctx, 0, ga_i + ib*bd,        ga_i + ib*bd + ga_w, ga_n);
-                    llama_kv_cache_seq_add(ctx, 0, ga_i + ib*bd + ga_w, n_past + ib*bd,      dd);
-
-                    n_past -= bd;
-
-                    ga_i += ga_w/ga_n;
-                }
-            }
-
-            // evaluate tokens in batches
-            // embd is typically prepared beforehand to fit within a batch, but not always
-            if (ctx_guidance != NULL) {
-                int input_size = 0;
-                llama_token * input_buf = NULL;
-
-                if (n_past_guidance < (int) guidance_inp.size()) {
-                    // Guidance context should have the same data with these modifications:
-                    //
-                    // * Replace the initial prompt
-                    // * Shift everything by guidance_offset
-                    embd_guidance = guidance_inp;
-                    if (embd.begin() + original_prompt_len < embd.end()) {
-                        embd_guidance.insert(
-                            embd_guidance.end(),
-                            embd.begin() + original_prompt_len,
-                            embd.end()
-                        );
-                    }
-
-                    input_buf  = embd_guidance.data();
-                    input_size = embd_guidance.size();
-                } else {
-                    input_buf  = embd.data();
-                    input_size = embd.size();
-                }
-
-                for (int i = 0; i < input_size; i += params.n_batch) {
-                    int n_eval = std::min(input_size - i, params.n_batch);
-                    if (llama_decode(ctx_guidance, llama_batch_get_one(input_buf + i, n_eval, n_past_guidance, 0))) {
-                        log_output("Error decoding tokens: 1");
-                        output("", true);
-                        return 1;
-                    }
-
-                    n_past_guidance += n_eval;
-                }
-            }
-
-            for (int i = 0; i < (int) embd.size(); i += params.n_batch) {
-                int n_eval = (int) embd.size() - i;
-                if (n_eval > params.n_batch) {
-                    n_eval = params.n_batch;
-                }
-
-                if (llama_decode(ctx, llama_batch_get_one(&embd[i], n_eval, n_past, 0))) {
-                    log_output("Error decoding tokens: 2");
-                    output("", true);
-                    return 1;
-                }
-
-                n_past += n_eval;
-            }
-
-            auto prediction_end_time = std::chrono::high_resolution_clock::now();
-            log_output(("Predicted in " + get_elapsed_seconds(prediction_end_time - prediction_start_time)).c_str());
-        }
-
-        embd.clear();
-        embd_guidance.clear();
-
-        if ((int) embd_inp.size() <= n_consumed && !is_interacting) {
-            auto sample_start_time = std::chrono::high_resolution_clock::now();
-
-            const llama_token id = llama_sampling_sample(ctx_sampling, ctx, ctx_guidance);
-
-            llama_sampling_accept(ctx_sampling, ctx, id, true);
-
-            embd.push_back(id);
-
-            auto sample_end_time = std::chrono::high_resolution_clock::now();
-            log_output(("Sampled token in " + get_elapsed_seconds(sample_end_time - sample_start_time)).c_str());
-
-            // decrement remaining sampling budget
-            --n_remain;
-        } else {
-            auto push_start_time = std::chrono::high_resolution_clock::now();
-
-            while ((int) embd_inp.size() > n_consumed) {
-                embd.push_back(embd_inp[n_consumed]);
-
-                // push the prompt in the sampling context in order to apply repetition penalties later
-                // for the prompt, we don't apply grammar rules
-                llama_sampling_accept(ctx_sampling, ctx, embd_inp[n_consumed], false);
-
-                ++n_consumed;
-                if ((int) embd.size() >= params.n_batch) {
-                    break;
-                }
-            }
-
-            auto push_end_time = std::chrono::high_resolution_clock::now();
-            log_output(("Pushed tokens in " + get_elapsed_seconds(push_end_time - push_start_time)).c_str());
-        }
-
-        // Cache the last terminator_length tokens for display
-        // This is done to ensure the antiprompt is detected correctly
-        embd_cache.insert(embd_cache.end(), embd.begin(), embd.end());
-        if ((int) embd_cache.size() > terminator_length) {
-            // display text
-            while ((int) embd_cache.size() > terminator_length) {
-                auto id = embd_cache.front();
-                embd_out.push_back(id);
-                embd_cache.erase(embd_cache.begin());
-            }
-        }
-
-        if ((n_past - terminator_length + 1 >= (int) embd_inp.size() + n_prior && embd_out.size() > 0) || !(params.instruct || params.interactive || params.chatml)) {
-            for (auto id : embd_out) {
-                output(llama_token_to_piece(ctx, id).c_str(), false);
-            }
-
-            if (!has_output) {
-                auto first_output_time = std::chrono::high_resolution_clock::now();
-                log_output(("First output in " + get_elapsed_seconds(first_output_time - prompt_start_time)).c_str());
-            }
-
-            has_output = true;
-        }
-
-        embd_out.clear();
-
+    while (n_past < n_sample) {
         if (stop_generation.load()) {
             stop_generation.store(false);  // reset for future use
             break;
         }
 
-        // if not currently processing queued inputs;
-        if ((int) embd_inp.size() <= n_consumed) {
-            // check for reverse prompt in the last n_prev tokens
-            if (!params.antiprompt.empty()) {
-                const int n_prev = 32;
-                const std::string last_output = llama_sampling_prev_str(ctx_sampling, ctx, n_prev);
-
-                is_antiprompt = false;
-                // Check if each of the reverse prompts appears at the end of the output.
-                // If we're not running interactively, the reverse prompt might be tokenized with some following characters
-                // so we'll compensate for that by widening the search window a bit.
-                for (std::string & antiprompt : params.antiprompt) {
-                    size_t extra_padding = params.interactive ? 0 : 2;
-                    size_t search_start_pos = last_output.length() > static_cast<size_t>(antiprompt.length() + extra_padding)
-                        ? last_output.length() - static_cast<size_t>(antiprompt.length() + extra_padding)
-                        : 0;
-
-                    if (last_output.find(antiprompt, search_start_pos) != std::string::npos) {
-                        if (params.interactive) {
-                            is_interacting = true;
-                        }
-                        is_antiprompt = true;
-                        break;
-                    }
-                }
-
-                if (is_antiprompt) {
-                    LOG("found antiprompt: %s\n", last_output.c_str());
-                }
-            }
-
-            // deal with end of text token in interactive mode
-            if (llama_sampling_last(ctx_sampling) == llama_token_eos(model)) {
-                if (params.interactive) {
-                    if (!params.antiprompt.empty()) {
-                        // tokenize and inject first reverse prompt
-                        const auto first_antiprompt = ::llama_tokenize(ctx, params.antiprompt.front(), false, true);
-                        embd_inp.insert(embd_inp.end(), first_antiprompt.begin(), first_antiprompt.end());
-                        is_antiprompt = true;
-                    }
-
-                    is_interacting = true;
-                } else if (params.instruct || params.chatml) {
-                    is_interacting = true;
-                }
-            }
-
-            if (n_past > 0) {
-                if (is_interacting) {
-                    llama_sampling_reset(ctx_sampling);
-                }
-                is_interacting = false;
-            }
+        if (output_token != llama_token_bos(model)) {
+            output(llama_token_to_piece(ctx, output_token).c_str(), false);
         }
 
-        // end of text token
-        if (!embd.empty() && embd.back() == llama_token_eos(model) && !(params.instruct || params.interactive || params.chatml)) {
+        // sample the most likely token
+        output_token = llama_sampling_sample(ctx_sampling, ctx, NULL, NULL);
+
+        // is it an end of stream?
+        if (output_token == llama_token_eos(model)) {
             break;
         }
 
-        // In interactive mode, respect the maximum number of tokens and drop back to user input when reached.
-        // We skip this logic when n_predict == -1 (infinite) or -2 (stop at context size).
-        if (params.interactive && n_remain <= 0 && params.n_predict >= 0) {
-            n_remain = params.n_predict;
-            is_interacting = true;
+        // prepare the next batch
+        llama_batch_clear(batch);
+
+        // push this new token for next evaluation
+        llama_batch_add(batch, output_token, n_past, { 0 }, true);
+        
+        // evaluate the current batch with the transformer model
+        if (llama_decode(ctx, batch)) {
+            log_output("Decode failed in main loop");
+            return 1;
         }
+
+        n_past++;
     }
 
-    llama_sampling_free(ctx_sampling);
     log_output(("Prompt force stopped in " + get_elapsed_seconds(std::chrono::high_resolution_clock::now() - prompt_start_time)).c_str());
     output("", true);
     return 0;
@@ -431,7 +175,6 @@ EXPORT void maid_llm_stop(void) {
 EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
     llama_free(ctx);
-    llama_free(ctx_guidance);
     llama_free_model(model);
     llama_backend_free();
 }
