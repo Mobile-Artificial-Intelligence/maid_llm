@@ -85,7 +85,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     int n_predict = params.n_predict;
 
     if (n_predict <= 0) {
-        n_predict = n_ctx - input_tokens.size() - 1;
+        n_predict = n_ctx / 2;
     }
 
     //Truncate the prompt if it's too long
