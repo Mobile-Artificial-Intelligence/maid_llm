@@ -1,6 +1,6 @@
 name: maid_llm
 description: "maid_llm is a dart implementation of llama.cpp used by the mobile artificial intelligence distribution (maid)"
-version: 1.0.0
+version: 1.0.1
 homepage: "https://github.com/Mobile-Artificial-Intelligence/maid_llm"
 
 environment:
