@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <unordered_set>
 #include <thread>
 #include <atomic>
@@ -21,6 +22,8 @@ static std::mutex continue_mutex;
 
 static llama_model * model;
 static gpt_params params;
+
+static std::vector<std::vector<llama_token>> terminator_sequences;
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
@@ -37,16 +40,18 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
     }
 
     if (params.instruct) {
-        // instruct mode: insert instruction prefix to antiprompts
-        params.antiprompt.push_back("### Instruction:");
+        terminator_sequences.push_back(llama_tokenize(model, "### Instruction:", false, true));
+        terminator_sequences.push_back(llama_tokenize(model, "### Response:", false, true));
+        terminator_sequences.push_back(llama_tokenize(model, "### System:", false, true));
+        terminator_sequences.push_back(llama_tokenize(model, "\n\n", false, true));
     }
 
     if (params.chatml) {
-        // chatml mode: insert user chat prefix to antiprompts
-        params.antiprompt.push_back("<|im_end|>");
+        terminator_sequences.push_back(llama_tokenize(model, "<|im_start|>", false, true));
+        terminator_sequences.push_back(llama_tokenize(model, "<|im_end|>", false, true));
     }
 
-    params.antiprompt.push_back("\n\n\n\n\n");
+    terminator_sequences.push_back(llama_tokenize(model, "\n\n\n\n\n", false, true));
 
     auto init_end_time = std::chrono::high_resolution_clock::now();
     log_output(("Model init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
@@ -68,8 +73,15 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     std::vector<llama_token> input_tokens = parse_messages(msg_count, messages, ctx, model, params);
 
+    std::vector<llama_token> cache_tokens;
+
     int n_past = 0;
     int n_ctx = llama_n_ctx(ctx);
+    int terminator_max = 0;
+
+    for (auto &terminator : terminator_sequences) {
+        terminator_max = std::max(terminator_max, (int) terminator.size() + 1);
+    }
 
     log_output(("n_ctx: " + std::to_string(n_ctx)).c_str());
 
@@ -102,8 +114,18 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             break;
         }
 
-        // output the token
-        output(llama_token_to_piece(ctx, id).c_str(), false);
+        // Add token to cache
+        cache_tokens.push_back(id);
+
+        if (cache_tokens.size() > terminator_max) {
+            if (search_terminators(terminator_sequences, &cache_tokens)) {
+                break;
+            }
+
+            // Pop the first token from the cache and send it to the output
+            output(llama_token_to_piece(ctx, cache_tokens[0]).c_str(), false);
+            cache_tokens.erase(cache_tokens.begin());
+        }
 
         // evaluate the token
         if (!eval_id(ctx, id, &n_past)) break;

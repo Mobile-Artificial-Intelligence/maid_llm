@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <cassert>
+#include <algorithm>
 
 static llama_sampling_params from_c_sampling_params(struct sampling_params c_params) {
     llama_sampling_params cpp_params;
@@ -296,4 +297,17 @@ static bool eval_id(struct llama_context * ctx_llama, int id, int * n_past) {
     std::vector<llama_token> tokens;
     tokens.push_back(id);
     return eval_tokens(ctx_llama, tokens, 1, n_past);
+}
+
+static bool search_terminators(std::vector<std::vector<llama_token>> terminators, std::vector<llama_token> * tokens) {
+    for (auto &terminator : terminators) {
+        auto it = std::search(tokens->begin(), tokens->end(), terminator.begin(), terminator.end());
+    
+        if (it != tokens->end()) {
+            tokens->erase(it, it + terminator.size());
+            return true;
+        }
+
+    }
+    return false;
 }
