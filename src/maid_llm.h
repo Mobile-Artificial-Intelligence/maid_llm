@@ -154,8 +154,6 @@ typedef void dart_output(const char *buffer, bool stop);
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log_output);
-
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output);
 
 EXPORT void maid_llm_stop(void);

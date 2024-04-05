@@ -22,9 +22,6 @@ static std::mutex continue_mutex;
 static llama_model * model;
 static gpt_params params;
 
-static llama_context * ctx;
-
-
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
 
@@ -57,24 +54,15 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
     return 0;
 }
 
-EXPORT int maid_llm_context_init(struct gpt_c_params *c_params, dart_logger *log_output) {
-    auto init_start_time = std::chrono::high_resolution_clock::now();
-
-    llama_context_params lparams = llama_context_params_from_gpt_params(params);
-
-    ctx = llama_new_context_with_model(model, lparams);
-
-    auto init_end_time = std::chrono::high_resolution_clock::now();
-    log_output(("Context init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
-
-    return 0;
-}
-
 EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
 
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
+
+    llama_context_params lparams = llama_context_params_from_gpt_params(params);
+
+    llama_context * ctx = llama_new_context_with_model(model, lparams);
 
     llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
@@ -122,7 +110,9 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     }
 
     log_output(("Prompt stopped in " + get_elapsed_seconds(std::chrono::high_resolution_clock::now() - prompt_start_time)).c_str());
-    stop_generation.store(false); 
+    stop_generation.store(false);
+    llama_free(ctx);
+    llama_sampling_free(ctx_sampling);
     output("", true);
     return 0;
 }
@@ -133,7 +123,6 @@ EXPORT void maid_llm_stop(void) {
 
 EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
-    llama_free(ctx);
     llama_free_model(model);
     llama_backend_free();
 }
