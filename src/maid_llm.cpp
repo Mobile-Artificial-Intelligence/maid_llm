@@ -82,11 +82,14 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     int n_past = 0;
     int n_ctx = llama_n_ctx(ctx);
-    int n_predict = params.n_predict;
+    int n_predict = params.n_predict; // max number of tokens to predict
 
-    if (n_predict <= 0) {
-        n_predict = n_ctx / 2;
+    if (n_predict <= 0 || n_predict > n_ctx / 4) {
+        n_predict = n_ctx / 4;
     }
+
+    log_output(("n_ctx: " + std::to_string(n_ctx)).c_str());
+    log_output(("n_predict: " + std::to_string(n_predict)).c_str());
 
     //Truncate the prompt if it's too long
     if ((int) input_tokens.size() > n_ctx - n_predict) {
