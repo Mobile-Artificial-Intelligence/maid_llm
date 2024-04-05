@@ -10,9 +10,9 @@ endif()
 #set(LLAMA_STATIC ON CACHE BOOL "llama: enable static link libraries" FORCE)
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
 
-#if (NOT WIN32)
-#  set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
-#endif()
+if (NOT WIN32)
+  set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
+endif()
 
 add_subdirectory(./llama_cpp)
 
