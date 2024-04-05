@@ -114,18 +114,8 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             break;
         }
 
-        // Add token to cache
-        cache_tokens.push_back(id);
-
-        if (cache_tokens.size() > terminator_max) {
-            if (search_terminators(terminator_sequences, &cache_tokens)) {
-                break;
-            }
-
-            // Pop the first token from the cache and send it to the output
-            output(llama_token_to_piece(ctx, cache_tokens[0]).c_str(), false);
-            cache_tokens.erase(cache_tokens.begin());
-        }
+        // output the token
+        output(llama_token_to_piece(ctx, id).c_str(), false);
 
         // evaluate the token
         if (!eval_id(ctx, id, &n_past)) break;
