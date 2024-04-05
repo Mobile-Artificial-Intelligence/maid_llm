@@ -80,10 +80,18 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     std::vector<llama_token> input_tokens = parse_messages(msg_count, messages, ctx, model, params);
 
+    int n_past = 0;
+    int n_ctx = llama_n_ctx(ctx);
+    int n_predict = params.n_predict;
+
+    if (n_predict <= 0) {
+        n_predict = n_ctx - input_tokens.size() - 1;
+    }
+
     //Truncate the prompt if it's too long
-    if ((int) input_tokens.size() > llama_n_ctx(ctx) - 4) {
+    if ((int) input_tokens.size() > n_ctx - n_predict) {
         // truncate the input
-        input_tokens.erase(input_tokens.begin(), input_tokens.begin() + (input_tokens.size() - (llama_n_ctx(ctx) - 4)));
+        input_tokens.erase(input_tokens.begin(), input_tokens.begin() + (input_tokens.size() - (n_ctx - n_predict)));
 
         // log the truncation
         log_output(("input_tokens was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, input_tokens)).c_str());
@@ -94,8 +102,6 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
         input_tokens.push_back(llama_token_bos(model));
         log_output(("input_tokens was considered empty and bos was added: " + LOG_TOKENS_TOSTR_PRETTY(ctx, input_tokens)).c_str());
     }
-
-    int n_past = 0;
 
     eval_tokens(ctx, input_tokens, params.n_batch, &n_past);
 
