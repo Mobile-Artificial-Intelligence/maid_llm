@@ -273,8 +273,16 @@ std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[],
     return input_tokens;
 }
 
-std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
+static std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {
     return std::to_string(std::chrono::duration<double>(__d).count()) + " seconds";
+}
+
+static std::string tokens_to_string(llama_context * ctx_llama, std::vector<llama_token> tokens) {
+    std::string str;
+    for (auto token : tokens) {
+        str += llama_token_to_piece(ctx_llama, token);
+    }
+    return str;
 }
 
 static bool eval_tokens(struct llama_context * ctx_llama, std::vector<llama_token> tokens, int n_batch, int * n_past) {

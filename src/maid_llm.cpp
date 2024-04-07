@@ -43,7 +43,6 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
         terminator_sequences.push_back(llama_tokenize(model, "### Instruction:", false, true));
         terminator_sequences.push_back(llama_tokenize(model, "### Response:", false, true));
         terminator_sequences.push_back(llama_tokenize(model, "### System:", false, true));
-        terminator_sequences.push_back(llama_tokenize(model, "\n\n", false, true));
     }
 
     if (params.chatml) {
@@ -111,14 +110,32 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
         // is it an end of stream?
         if (id == llama_token_eos(model)) {
+            output(tokens_to_string(ctx, cache_tokens).c_str(), false);
+            log_output("Breaking due to eos");
             break;
         }
 
-        // output the token
-        output(llama_token_to_piece(ctx, id).c_str(), false);
+        // Add token to cache
+        cache_tokens.push_back(id);
+
+        if (cache_tokens.size() > terminator_max) {
+            if (search_terminators(terminator_sequences, &cache_tokens)) {
+                output(tokens_to_string(ctx, cache_tokens).c_str(), false);
+                log_output("Breaking due to terminator");
+                break;
+            }
+
+            // Pop the first token from the cache and send it to the output
+            output(llama_token_to_piece(ctx, cache_tokens[0]).c_str(), false);
+            cache_tokens.erase(cache_tokens.begin());
+        }
 
         // evaluate the token
-        if (!eval_id(ctx, id, &n_past)) break;
+        if (!eval_id(ctx, id, &n_past)) {
+            output(tokens_to_string(ctx, cache_tokens).c_str(), false);
+            log_output("Breaking due to eval_id");
+            break;
+        }
     }
 
     log_output(("Prompt stopped in " + get_elapsed_seconds(std::chrono::high_resolution_clock::now() - prompt_start_time)).c_str());
