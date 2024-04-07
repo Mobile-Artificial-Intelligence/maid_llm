@@ -76,6 +76,12 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     int n_past = 0;
     int n_ctx = llama_n_ctx(ctx);
+    int n_predict = params.n_predict;
+
+    if (n_predict <= 0 || n_predict > n_ctx) {
+        n_predict = n_ctx;
+    }
+
     int terminator_max = 0;
 
     for (auto &terminator : terminator_sequences) {
@@ -83,15 +89,16 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     }
 
     log_output(("n_ctx: " + std::to_string(n_ctx)).c_str());
+    log_output(("n_predict: " + std::to_string(n_predict)).c_str());
 
     //Truncate the prompt if it's too long
-    if ((int) input_tokens.size() > n_ctx ) {
+    if ((int) input_tokens.size() >= n_ctx - n_predict) {
         // truncate the input
-        input_tokens.erase(input_tokens.begin(), input_tokens.begin() + (input_tokens.size() - n_ctx));
+        input_tokens.erase(input_tokens.begin(), input_tokens.begin() + (input_tokens.size() - n_ctx) + n_predict);
 
         // log the truncation
         log_output(("input_tokens was truncated: " + LOG_TOKENS_TOSTR_PRETTY(ctx, input_tokens)).c_str());
-    } 
+    }
     
     // Should not run without any tokens
     if (input_tokens.empty()) {
