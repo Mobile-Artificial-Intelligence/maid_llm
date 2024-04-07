@@ -80,7 +80,7 @@ class MaidLLM {
         if (done) {
           receivePort.close();
           isolate.kill();
-          _completer!.complete();
+          _completer?.complete();
           return;
         }
 
