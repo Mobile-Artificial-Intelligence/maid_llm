@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
-import 'package:langchain/langchain.dart';
+import 'chat_node.dart';
 import 'gpt_params.dart';
 
 import 'bindings.dart';
@@ -63,7 +63,7 @@ class MaidLLM {
     });
   }
 
-  Stream<String> prompt(List<ChatMessage> messages) async* {   
+  Stream<String> prompt(List<ChatNode> messages) async* {   
     // Ensure initialization is complete
     await _completer?.future;
     _completer = Completer();
@@ -107,7 +107,7 @@ class MaidLLM {
     }
   }
 
-  static void _promptIsolate((List<ChatMessage>, SendPort) args) {
+  static void _promptIsolate((List<ChatNode>, SendPort) args) {
     final (messages, sendPort) = args;
     _sendPort = sendPort;
 
@@ -127,29 +127,16 @@ class MaidLLM {
     }
   }
 
-  static Pointer<Pointer<chat_message>> _toNativeChatMessages(
-      List<ChatMessage> messages) {
+  static Pointer<Pointer<chat_message>> _toNativeChatMessages(List<ChatNode> messages) {
     final chatMessages = calloc<Pointer<chat_message>>(messages.length);
 
     for (var i = 0; i < messages.length; i++) {
       chatMessages[i] = calloc<chat_message>()
-        ..ref.role = _chatMessageToRole(messages[i])
-        ..ref.content = messages[i].contentAsString.toNativeUtf8().cast<Char>();
+        ..ref.role = messages[i].role.index
+        ..ref.content = messages[i].content.toNativeUtf8().cast<Char>();
     }
 
     return chatMessages;
-  }
-
-  static int _chatMessageToRole(ChatMessage message) {
-    if (message is SystemChatMessage) {
-      return chat_role.ROLE_SYSTEM;
-    } else if (message is HumanChatMessage) {
-      return chat_role.ROLE_USER;
-    } else if (message is AIChatMessage) {
-      return chat_role.ROLE_ASSISTANT;
-    } else {
-      throw Exception('Unknown ChatMessage type');
-    }
   }
 
   static void _output(Pointer<Char> buffer, bool stop) {
