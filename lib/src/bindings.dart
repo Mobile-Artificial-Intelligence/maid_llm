@@ -36,6 +36,23 @@ class maid_llm {
   late final _maid_llm_model_init = _maid_llm_model_initPtr.asFunction<
       int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
 
+  int maid_llm_context_init(
+    ffi.Pointer<gpt_c_params> c_params,
+    ffi.Pointer<dart_logger> log_output,
+  ) {
+    return _maid_llm_context_init(
+      c_params,
+      log_output,
+    );
+  }
+
+  late final _maid_llm_context_initPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<gpt_c_params>,
+              ffi.Pointer<dart_logger>)>>('maid_llm_context_init');
+  late final _maid_llm_context_init = _maid_llm_context_initPtr.asFunction<
+      int Function(ffi.Pointer<gpt_c_params>, ffi.Pointer<dart_logger>)>();
+
   int maid_llm_prompt(
     int msg_count,
     ffi.Pointer<ffi.Pointer<chat_message>> messages,
@@ -393,6 +410,6 @@ typedef dart_output = ffi.NativeFunction<
 
 const int __bool_true_false_are_defined = 1;
 
-const int true1 = 1;
-
 const int false1 = 0;
+
+const int true1 = 1;

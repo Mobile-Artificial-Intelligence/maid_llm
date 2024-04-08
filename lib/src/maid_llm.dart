@@ -15,6 +15,8 @@ class MaidLLM {
   static maid_llm? _lib;
   static void Function(String)? _log;
 
+  List<ChatMessage>? _lastMessages;
+
   /// Getter for the Llama library.
   ///
   /// Loads the library based on the current platform.
@@ -63,7 +65,61 @@ class MaidLLM {
     });
   }
 
+  void reset(GptParams params) async {
+    _log?.call('Resetting LLM');
+
+    await _completer?.future;
+    _completer = Completer();
+
+    final receivePort = ReceivePort();
+    _sendPort = receivePort.sendPort;
+
+    Isolate.spawn(_resetIsolate, (params, _sendPort!)).then((value) async {
+      receivePort.listen((data) {
+        if (data is int) {
+          if (data == 0) {
+            _completer!.complete();
+          } else {
+            _completer!.completeError(Exception('Failed to reset LLM, Exception Uncaught'));
+          } 
+        } else if (data is String && _log != null) {
+          _log!(data);
+        }
+      });
+
+      await _completer!.future;
+    });
+  }
+
   Stream<String> prompt(List<ChatMessage> messages) async* {   
+    List<ChatMessage> cleanedMessages = messages;
+    
+    if (_lastMessages != null) {      
+      bool same = true;
+
+      int difference = messages.length - _lastMessages!.length;
+
+      if (difference <= 0) {
+        same = false;
+      } 
+      else {
+        // Check is all previous messages are the same
+        for (var i = 0; i < messages.length - difference; i++) {
+          if (_lastMessages![i].contentAsString != messages[i].contentAsString) {
+            same = false;
+            break;
+          }
+        }
+      }
+
+      // If messages are the same, only send the last message
+      if (same) {
+        cleanedMessages = messages.sublist(messages.length - difference + 1);
+      }
+    }
+
+    _lastMessages = messages;
+    
     // Ensure initialization is complete
     await _completer?.future;
     _completer = Completer();
@@ -71,7 +127,7 @@ class MaidLLM {
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
-    final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
+    final isolate = await Isolate.spawn(_promptIsolate, (cleanedMessages, _sendPort!));
 
     await for (var data in receivePort) {
       if (data is (String, bool)) {
@@ -96,9 +152,31 @@ class MaidLLM {
     _sendPort = sendPort;
 
     try {
-      final ret = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
-      if (ret != 0) {
+      final ret1 = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
+      if (ret1 != 0) {
         throw Exception('Failed to initialize model');
+      }
+
+      final ret2 = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
+      if (ret2 != 0) {
+        throw Exception('Failed to initialize context');
+      }
+
+      _sendPort!.send(ret1 + ret2);
+    } catch (e) {
+      _sendPort!.send(e.toString());
+    }
+  }
+
+  static void _resetIsolate((GptParams, SendPort) args) {
+    final (params, sendPort) = args;
+    _sendPort = sendPort;
+
+    try {
+      final ret = lib.maid_llm_context_init(params.get(), Pointer.fromFunction(_logOutput));
+
+      if (ret != 0) {
+        throw Exception('Failed to reset');
       }
 
       _sendPort!.send(ret);
