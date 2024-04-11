@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_SHARED_LIBS ON)
 
-if(ANDROID)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID_ARM_NEON=TRUE -DANDROID_TOOLCHAIN=clang -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-23")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID_ARM_NEON=TRUE -DANDROID_TOOLCHAIN=clang -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-23")
-endif()
-
-#set(LLAMA_STATIC ON CACHE BOOL "llama: enable static link libraries" FORCE)
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
 
 set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
