@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_SHARED_LIBS ON)
 
-set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
+# Set the linker flags for shared libraries
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=none")
 
+set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
 set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
 
 add_subdirectory(./llama_cpp)
