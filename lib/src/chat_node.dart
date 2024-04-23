@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 class ChatNode {
   final StreamController<String> messageController = StreamController<String>.broadcast();
 
-  final Key key;
-  final ChatRole role;
+  late Key key;
+  late ChatRole role;
 
-  String content;
+  String content = '';
 
   Key? currentChild;
-  List<ChatNode> children;
+  List<ChatNode> children = [];
 
   ChatNode({
     required this.key,
@@ -20,19 +20,13 @@ class ChatNode {
     List<ChatNode>? children,
   }) : children = children ?? [];
 
-  ChatNode.fromMap(Map<String, dynamic> map)
-    : key = ValueKey(
-      map['key'] as String? ?? _keyToString(UniqueKey())
-    ),
-    role = ChatRole.values[map['role'] as int? ?? ChatRole.system.index],
-    content = map['content'] ?? "",
-    currentChild = map['currentChild'] != null
-        ? ValueKey(map['currentChild'] as String)
-        : null,
-    children = (map['children'] ?? [])
-        .map((childMap) => ChatNode.fromMap(childMap))
-        .toList()
-        .cast<ChatNode>();
+  ChatNode.fromMap(Map<String, dynamic> map) {
+    key = Key(map['key']);
+    role = ChatRole.values[map['role']];
+    content = map['content'];
+    currentChild = map['currentChild'] != null ? Key(map['currentChild']) : null;
+    children = (map['children'] as List).map((child) => ChatNode.fromMap(child)).toList();
+  }
 
   Map<String, dynamic> toMap() {
     return {
