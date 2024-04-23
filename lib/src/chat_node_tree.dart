@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ import 'package:maid_llm/src/chat_node.dart';
 class ChatNodeTree {
   String buffer = "";
 
-  ChatNode root = ChatNode(key: UniqueKey(), role: ChatRole.system);
+  ChatNode root = ChatNode(key: UniqueKey(), role: ChatRole.system, finalised: true);
 
   ChatNode get tail {
     final Queue<ChatNode> queue = Queue.from([root]);
@@ -35,7 +34,7 @@ class ChatNodeTree {
     String content = "",
     ChatRole role = ChatRole.user,
   }) {
-    final node = ChatNode(key: key, content: content, role: role);
+    final node = ChatNode(key: key, content: content, role: role, finalised: content.isNotEmpty);
 
     var found = find(key);
     if (found != null) {
@@ -44,6 +43,17 @@ class ChatNodeTree {
     else {
       tail.children.add(node);
       tail.currentChild = key;
+    }
+  }
+
+  void addNode(ChatNode node) {
+    var found = find(node.key);
+    if (found != null) {
+      found.content = node.content;
+    } 
+    else {
+      tail.children.add(node);
+      tail.currentChild = node.key;
     }
   }
 
@@ -145,39 +155,6 @@ class ChatNodeTree {
     } else {
       return 0;
     }
-  }
-
-  StreamController<String> getMessageStream(Key key) {
-    return find(key)?.messageController ??
-        StreamController<String>.broadcast();
-  }
-
-  Map<Key, ChatRole> getHistory() {
-    final Map<Key, ChatRole> history = {};
-    var current = root;
-
-    while (current.currentChild != null) {
-      current = find(current.currentChild!)!;
-      history[current.key] = current.role;
-    }
-
-    return history;
-  }
-
-  List<Map<String, dynamic>> getMessages() {
-    final List<Map<String, dynamic>> messages = [];
-    var current = root;
-
-    while (current.currentChild != null) {
-      current = find(current.currentChild!)!;
-      messages.add({"role": current.role.name, "content": current.content});
-    }
-
-    if (messages.isNotEmpty) {
-      messages.remove(messages.last); //remove last message
-    }
-
-    return messages;
   }
 
   List<ChatNode> getChat() {

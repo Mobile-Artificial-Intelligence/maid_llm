@@ -1,14 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 class ChatNode {
-  final StreamController<String> messageController = StreamController<String>.broadcast();
-
   late Key key;
   late ChatRole role;
 
   String content = '';
+  bool finalised = false;
 
   Key? currentChild;
   List<ChatNode> children = [];
@@ -17,6 +14,7 @@ class ChatNode {
     required this.key,
     required this.role,
     this.content = "",
+    this.finalised = false,
     List<ChatNode>? children,
   }) : children = children ?? [];
 
@@ -24,6 +22,7 @@ class ChatNode {
     key = Key(map['key']);
     role = ChatRole.values[map['role']];
     content = map['content'];
+    finalised = true;
     currentChild = map['currentChild'] != null ? Key(map['currentChild']) : null;
     children = (map['children'] as List).map((child) => ChatNode.fromMap(child)).toList();
   }
@@ -36,6 +35,13 @@ class ChatNode {
       'currentChild': currentChild != null ? _keyToString(currentChild!) : null,
       'children': children.map((child) => child.toMap()).toList(),
     };
+  }
+
+  Future<void> streamIn(Stream<String> stream) async {
+    await for (var message in stream) {
+      content += message;
+    }
+    finalised = true;
   }
 
   static String _keyToString(Key key) {
