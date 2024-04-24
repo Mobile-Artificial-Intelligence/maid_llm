@@ -37,13 +37,6 @@ class ChatNode {
     };
   }
 
-  Future<void> streamIn(Stream<String> stream) async {
-    await for (var message in stream) {
-      content += message;
-    }
-    finalised = true;
-  }
-
   static String _keyToString(Key key) {
     String keyString = key.toString();
     
