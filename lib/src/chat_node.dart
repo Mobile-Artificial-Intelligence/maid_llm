@@ -19,7 +19,7 @@ class ChatNode {
   }) : children = children ?? [];
 
   ChatNode.fromMap(Map<String, dynamic> map) {
-    key = Key(map['key']);
+    key = Key(map['key'] ?? _keyToString(UniqueKey()));
     role = ChatRole.values[map['role']];
     content = map['content'];
     finalised = true;
