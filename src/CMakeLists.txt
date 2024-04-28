@@ -2,12 +2,18 @@ cmake_minimum_required(VERSION 3.10)
 
 set(BUILD_SHARED_LIBS ON)
 set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "library install dir" FORCE)
-
-# Set the linker flags for shared libraries
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=none")
 
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
-set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
+set(LLAMA_BLAS ON CACHE BOOL "llama: enable blas" FORCE)
+set(LLAMA_BLAS_VENDOR "OpenBLAS" CACHE STRING "llama: blas vendor" FORCE)
+
+find_package(Vulkan)
+if (Vulkan_FOUND)
+  set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
+else()
+  set(LLAMA_CLBLAST ON CACHE BOOL "llama: enable clblast" FORCE)
+endif()
 
 add_subdirectory(./llama_cpp)
 

@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@OPENBLAS_LIBRARY_DIR@
+includedir=@OPENBLAS_INCLUDE_DIR@
+
+Name: OpenBLAS
+Description: OpenBLAS libraries
+Version: 0.3.21 # Might need to adjust dynamically 
+Libs: -L${libdir} -lopenblas -lpthread -lgfortran
+Cflags: -I${includedir}
