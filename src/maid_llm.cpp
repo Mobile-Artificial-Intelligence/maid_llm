@@ -119,7 +119,7 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
             break;
         }
 
-        output(tokens_to_string(ctx, id).c_str(), false);
+        output(llama_token_to_piece(ctx, id).c_str(), false);
 
         // evaluate the token
         if (!eval_id(ctx, id, &n_past)) {
