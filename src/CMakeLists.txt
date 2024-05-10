@@ -72,6 +72,6 @@ target_link_options(maid_llm PRIVATE
 )
 
 # Enable compiler optimizations for arm64-v8a
-if(${ANDROID_ABI} STREQUAL "arm64-v8a")
+if(ANDROID_ABI STREQUAL "arm64-v8a")
   target_compile_options(maid_llm PRIVATE -march=armv8.4-a+fp16+dotprod)
 endif()
