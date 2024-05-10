@@ -9,8 +9,10 @@ find_package(Vulkan)
 if (Vulkan_FOUND)
   add_compile_definitions(GGML_USE_VULKAN)
   set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} Vulkan::Vulkan)
-  set(GGML_HEADERS_VULKAN ggml-vulkan.h)
-  set(GGML_SOURCES_VULKAN ggml-vulkan.cpp)
+  set(GGML_HEADERS_VULKAN ${LLAMA_CPP_DIR}/ggml-vulkan.h)
+  set(GGML_SOURCES_VULKAN ${LLAMA_CPP_DIR}/ggml-vulkan.cpp)
+else()
+  message(WARNING "Vulkan not found, building without Vulkan support")
 endif()
 
 add_library(maid_llm SHARED
