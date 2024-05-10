@@ -12,7 +12,7 @@ set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
 # Enable compiler optimizations for arm64-v8a
 if(ANDROID_ABI STREQUAL "arm64-v8a")
   add_compile_options(-O3)
-else()
+endif()
 
 #  Enable vulkan for llama
 set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
