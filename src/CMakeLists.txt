@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 
+function(apply_optimizations target_name)
+  message(STATUS "Applying optimizations to ${target_name}")
+
+  target_compile_options(${target_name} PRIVATE -O3 -DNDEBUG)
+  target_compile_options(${target_name} PRIVATE -ffunction-sections -fdata-sections)
+  target_compile_options(${target_name} PRIVATE -march=armv8.4-a+fp16+dotprod)
+
+  target_link_options(${target_name} PRIVATE -Wl,--gc-sections)
+  target_link_options(${target_name} PRIVATE -flto)
+endfunction()
+
 set(BUILD_SHARED_LIBS ON)
 set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "library install dir" FORCE)
 
@@ -8,12 +19,6 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=none"
 
 # Disable llama's -march=native flag
 set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
-
-# Enable compiler optimizations for arm64-v8a
-if(ANDROID_ABI STREQUAL "arm64-v8a")
-  add_compile_options(-O3)
-  add_link_options(-O3)
-endif()
 
 #  Enable vulkan for llama
 set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
@@ -29,6 +34,13 @@ target_include_directories(maid_llm PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/llama_cpp/common
 )
+
+# Enable compiler optimizations for arm64-v8a
+if(${ANDROID_ABI} STREQUAL "arm64-v8a")
+  apply_optimizations(maid_llm)
+  apply_optimizations(llama)
+  apply_optimizations(common)
+endif()
 
 target_link_libraries(maid_llm llama common)
 
