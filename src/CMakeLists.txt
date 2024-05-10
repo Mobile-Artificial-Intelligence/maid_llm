@@ -6,12 +6,13 @@ set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "library install dir" FORCE)
 # Set the linker flags for shared libraries
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=none")
 
-# Set LLAMA_NATIVE to on only for android abi arm64-v8a
+# Disable llama's -march=native flag
+set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
+
+# Enable compiler optimizations for arm64-v8a
 if(ANDROID_ABI STREQUAL "arm64-v8a")
-  set(LLAMA_NATIVE ON CACHE BOOL "llama: enable -march=native flag" FORCE)
+  add_compile_options(-O3)
 else()
-  set(LLAMA_NATIVE OFF CACHE BOOL "llama: disable -march=native flag" FORCE)
-endif()
 
 #  Enable vulkan for llama
 set(LLAMA_VULKAN ON CACHE BOOL "llama: enable vulkan" FORCE)
