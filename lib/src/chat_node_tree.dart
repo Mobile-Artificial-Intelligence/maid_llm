@@ -67,36 +67,14 @@ class ChatNodeTree {
   void next(Key key) {
     var parent = parentOf(key);
     if (parent != null) {
-      if (parent.currentChild == null) {
-        parent.currentChild = key;
-      } 
-      else {
-        var currentChildIndex = parent.children.indexWhere(
-          (element) => element.key == parent.currentChild
-        );
-
-        if (currentChildIndex < parent.children.length - 1) {
-          parent.currentChild = parent.children[currentChildIndex + 1].key;
-        }
-      }
+      parent.next();
     }
   }
 
   void last(Key key) {
     var parent = parentOf(key);
     if (parent != null) {
-      if (parent.currentChild == null) {
-        parent.currentChild = key;
-      } 
-      else {
-        var currentChildIndex = parent.children.indexWhere(
-          (element) => element.key == parent.currentChild
-        );
-
-        if (currentChildIndex > 0) {
-          parent.currentChild = parent.children[currentChildIndex - 1].key;
-        }
-      }
+      parent.last();
     }
   }
 
