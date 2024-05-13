@@ -6,85 +6,45 @@ import 'package:maid_llm/src/chat_node.dart';
 class ChatNodeTree {
   String buffer = "";
 
-  ChatNode root = ChatNode(key: UniqueKey(), role: ChatRole.system, finalised: true);
+  ChatNode root = ChatNode(role: ChatRole.system, finalised: true);
 
   ChatNode get tail {
-    final Queue<ChatNode> queue = Queue.from([root]);
-
-    while (queue.isNotEmpty) {
-      final current = queue.removeFirst();
-
-      if (current.children.isEmpty || current.currentChild == null) {
-        return current;
-      } 
-      else {
-        for (var child in current.children) {
-          if (child.key == current.currentChild) {
-            queue.add(child);
-          }
-        }
-      }
-    }
-
-    return root;
+    return root.tail;
   }
 
   void add(
-    Key key, {
+    String hash, {
     String content = "",
     ChatRole role = ChatRole.user,
   }) {
-    final node = ChatNode(key: key, content: content, role: role, finalised: content.isNotEmpty);
+    final node = ChatNode(content: content, role: role, finalised: content.isNotEmpty);
 
-    var found = find(key);
+    var found = find(hash);
     if (found != null) {
       found.content = content;
     } 
     else {
-      tail.children.add(node);
-      tail.currentChild = key;
+      tail.child = node;
     }
   }
 
   void addNode(ChatNode node) {
-    var found = find(node.key);
+    var found = find(node.hash);
     if (found != null) {
       found.content = node.content;
     } 
     else {
-      tail.children.add(node);
-      tail.currentChild = node.key;
+      tail.child = node;
     }
   }
 
-  void remove(Key key) {
-    var parent = parentOf(key);
-    if (parent != null) {
-      parent.children.removeWhere((element) => element.key == key);
-    }
-  }
-
-  void next(Key key) {
-    var parent = parentOf(key);
-    if (parent != null) {
-      parent.next();
-    }
-  }
-
-  void last(Key key) {
-    var parent = parentOf(key);
-    if (parent != null) {
-      parent.last();
-    }
-  }
-
-  ChatNode? find(Key targetKey) {
+  ChatNode? find(String hash) {
     final Queue<ChatNode> queue = Queue.from([root]);
 
     while (queue.isNotEmpty) {
       final current = queue.removeFirst();
 
-      if (current.key == targetKey) {
+      if (current.hash == hash) {
         return current;
       }
 
@@ -96,14 +56,14 @@ class ChatNodeTree {
     return null;
   }
 
-  ChatNode? parentOf(Key targetKey) {
+  ChatNode? parentOf(String hash) {
     final Queue<ChatNode> queue = Queue.from([root]);
 
     while (queue.isNotEmpty) {
       final current = queue.removeFirst();
 
       for (var child in current.children) {
-        if (child.key == targetKey) {
+        if (child.hash == hash) {
           return current;
         }
         queue.add(child);
@@ -113,34 +73,12 @@ class ChatNodeTree {
     return null;
   }
 
-  String messageOf(Key key) {
-    return find(key)?.content ?? "";
-  }
-
-  int indexOf(Key key) {
-    var parent = parentOf(key);
-    if (parent != null) {
-      return parent.children.indexWhere((element) => element.key == key);
-    } else {
-      return 0;
-    }
-  }
-
-  int siblingCountOf(Key key) {
-    var parent = parentOf(key);
-    if (parent != null) {
-      return parent.children.length;
-    } else {
-      return 0;
-    }
-  }
-
   List<ChatNode> getChat() {
     final List<ChatNode> chat = [];
     var current = root;
 
-    while (current.currentChild != null) {
-      current = find(current.currentChild!)!;
+    while (current.child != null) {
+      current = current.child!;
       if (current.content.isNotEmpty) {
         chat.add(current);
       }
