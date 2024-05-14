@@ -27,21 +27,13 @@ class ChatNodeTree {
     return root;
   }
 
-  void add(
-    String hash, {
+  void add({
     String content = "",
     ChatRole role = ChatRole.user,
   }) {
     final node = ChatNode(content: content, role: role, finalised: content.isNotEmpty);
-
-    var found = find(hash);
-    if (found != null) {
-      found.content = content;
-    } 
-    else {
-      tail.children.add(node);
-      tail.currentChild = hash;
-    }
+    tail.children.add(node);
+    tail.currentChild = node.hash;
   }
 
   void addNode(ChatNode node) {
