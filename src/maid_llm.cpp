@@ -70,7 +70,13 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
 
     llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
-    std::vector<llama_token> input_tokens = parse_messages(msg_count, messages, ctx, model, params);
+    std::vector<llama_chat_message> chat_messages = parse_chat_messages(messages, msg_count);
+
+    char *buffer = new char[params.n_ctx];
+
+    llama_chat_apply_template(model, NULL, chat_messages.data(), chat_messages.size(), true, buffer, params.n_ctx);
+
+    std::vector<llama_token> input_tokens = llama_tokenize(model, buffer, false, true);
     
     int n_past = 0;
     int n_ctx = llama_n_ctx(ctx);

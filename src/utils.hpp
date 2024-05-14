@@ -192,6 +192,33 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
+std::vector<llama_chat_message> parse_chat_messages(struct chat_message * messages[], int n_messages) {
+    std::vector<llama_chat_message> llama_messages;
+
+    for (int i = 0; i < n_messages; i++) {
+        llama_chat_message llama_message;
+
+        switch (messages[i]->role) {
+            case chat_role::ROLE_SYSTEM:
+                llama_message.content = "system";
+                break;
+            case chat_role::ROLE_USER:
+                llama_message.content = "user";
+                break;
+            case chat_role::ROLE_ASSISTANT:
+                llama_message.content = "assistant";
+                break;
+            default:
+                assert(false);
+        }
+
+        llama_message.content = messages[i]->content;
+        llama_messages.push_back(llama_message);
+    }
+
+    return llama_messages;
+}
+
 std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[], llama_context * ctx, llama_model * model, gpt_params params) {
     std::vector<llama_token> input_tokens;
 
