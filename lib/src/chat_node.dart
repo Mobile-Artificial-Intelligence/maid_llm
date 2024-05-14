@@ -1,52 +1,48 @@
-import 'package:flutter/material.dart';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 
 class ChatNode {
-  late Key key;
+  late String hash;
   late ChatRole role;
 
   String content = '';
   bool finalised = false;
 
-  Key? currentChild;
+  String? currentChild;
   List<ChatNode> children = [];
 
   ChatNode({
-    required this.key,
     required this.role,
     this.content = "",
     this.finalised = false,
     List<ChatNode>? children,
-  }) : children = children ?? [];
+  }) : 
+  hash = _generateRandomHash(),
+  children = children ?? [];
 
   ChatNode.fromMap(Map<String, dynamic> map) {
-    key = Key(map['key'] ?? _keyToString(UniqueKey()));
+    hash = map['hash'] ?? _generateRandomHash();
     role = ChatRole.values[map['role']];
     content = map['content'];
     finalised = true;
-    currentChild = map['currentChild'] != null ? Key(map['currentChild']) : null;
+    currentChild = map['currentChild'];
     children = (map['children'] as List).map((child) => ChatNode.fromMap(child)).toList();
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'key': _keyToString(key),
+      'hash': hash,
       'role': role.index,
       'content': content,
-      'currentChild': currentChild != null ? _keyToString(currentChild!) : null,
+      'currentChild': currentChild,
       'children': children.map((child) => child.toMap()).toList(),
     };
   }
 
-  static String _keyToString(Key key) {
-    String keyString = key.toString();
-    
-    keyString = keyString.replaceAll('\'', '');
-    keyString = keyString.replaceAll('<', '');
-    keyString = keyString.replaceAll('>', '');
-    keyString = keyString.replaceAll('[', '');
-    keyString = keyString.replaceAll(']', '');
-
-    return keyString;
+  static String _generateRandomHash() {
+    var random = Random.secure();
+    var values = List<int>.generate(32, (i) => random.nextInt(256));
+    return sha256.convert(values).toString();
   }
 }
 
