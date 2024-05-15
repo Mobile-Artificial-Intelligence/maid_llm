@@ -192,31 +192,49 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-std::vector<llama_chat_message> parse_chat_messages(struct chat_message * messages[], int n_messages) {
-    std::vector<llama_chat_message> llama_messages;
+std::string format_chat(const struct llama_model * model, struct chat_message * messages[], int n_msg) {
+    size_t alloc_size = 0;
+    // vector holding all allocated string to be passed to llama_chat_apply_template
+    std::vector<std::string> str(n_msg * 2);
+    std::vector<llama_chat_message> chat(n_msg);
 
-    for (int i = 0; i < n_messages; i++) {
-        llama_chat_message llama_message;
+    for (size_t i = 0; i < n_msg; ++i) {
+        auto &curr_msg = messages[i];
 
         switch (messages[i]->role) {
             case chat_role::ROLE_SYSTEM:
-                llama_message.content = "system";
+                str[i*2 + 0] = "system";
                 break;
             case chat_role::ROLE_USER:
-                llama_message.content = "user";
+                str[i*2 + 0] = "user";
                 break;
             case chat_role::ROLE_ASSISTANT:
-                llama_message.content = "assistant";
+                str[i*2 + 0] = "assistant";
                 break;
             default:
                 assert(false);
         }
 
-        llama_message.content = messages[i]->content;
-        llama_messages.push_back(llama_message);
+        str[i*2 + 1]    = messages[i]->content;
+        alloc_size     += str[i*2 + 1].length();
+        chat[i].role    = str[i*2 + 0].c_str();
+        chat[i].content = str[i*2 + 1].c_str();
     }
 
-    return llama_messages;
+    std::vector<char> buf(alloc_size * 2);
+
+    // run the first time to get the total output length
+    int32_t res = llama_chat_apply_template(model, NULL, chat.data(), chat.size(), true, buf.data(), buf.size());
+
+    // if it turns out that our buffer is too small, we resize it
+    if ((size_t) res > buf.size()) {
+        buf.resize(res);
+        res = llama_chat_apply_template(model, NULL, chat.data(), chat.size(), true, buf.data(), buf.size());
+    }
+
+    std::string formatted_chat(buf.data(), res);
+
+    return formatted_chat;
 }
 
 std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[], llama_context * ctx, llama_model * model, gpt_params params) {
