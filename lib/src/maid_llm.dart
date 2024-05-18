@@ -113,8 +113,7 @@ class MaidLLM {
 
     try {
       final ret = lib.maid_llm_prompt(
-        messages.length,
-        _toNativeChatMessages(messages), 
+        _toNativeChat(messages), 
         Pointer.fromFunction(_output), 
         Pointer.fromFunction(_logOutput)
       );
@@ -127,17 +126,33 @@ class MaidLLM {
     }
   }
 
-  static Pointer<Pointer<chat_message>> _toNativeChatMessages(List<ChatNode> messages) {
-    final chatMessages = calloc<Pointer<chat_message>>(messages.length);
+  static Pointer<maid_llm_chat> _toNativeChat(List<ChatNode> messages) {
+  // Allocate an array of pointers to llama_chat_message
+  final chatMessages = calloc<llama_chat_message>(messages.length);
 
-    for (var i = 0; i < messages.length; i++) {
-      chatMessages[i] = calloc<chat_message>()
-        ..ref.role = messages[i].role.index
-        ..ref.content = messages[i].content.toNativeUtf8().cast<Char>();
+  int messageCount = 0;
+  int bufferSize = 1;
+
+  for (var i = 0; i < messages.length; i++) {
+    if (messages[i].content.isNotEmpty) {
+      var message = calloc<llama_chat_message>();
+      message.ref.role = messages[i].role.name.toNativeUtf8().cast<Char>();
+      message.ref.content = messages[i].content.toNativeUtf8().cast<Char>();
+
+      chatMessages[i] = message.ref;
+
+      bufferSize += messages[i].content.length;
+      messageCount++;
     }
-
-    return chatMessages;
   }
+
+  var chat = calloc<maid_llm_chat>();
+  chat.ref.messages = chatMessages;
+  chat.ref.message_count = messageCount;
+  chat.ref.buffer_size = bufferSize;
+
+  return chat;
+}
 
   static void _output(Pointer<Char> buffer, bool stop) {
     try {

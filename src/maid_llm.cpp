@@ -58,7 +58,7 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
     return 0;
 }
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output) {
+EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output, dart_logger *log_output) {
     auto prompt_start_time = std::chrono::high_resolution_clock::now();
 
     std::lock_guard<std::mutex> lock(continue_mutex);
@@ -72,9 +72,13 @@ EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_
     int n_ctx = llama_n_ctx(ctx);
     int n_predict = params.n_predict;
 
+    for (int i = 0; i < chat->message_count; i++) {
+        printf("Message %d: %s\n", i, chat->messages[i].content);
+    }
+
     llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
 
-    std::string buffer = format_chat(model, messages, msg_count);
+    std::string buffer = format_chat(model, chat);
 
     std::vector<llama_token> input_tokens = llama_tokenize(model, buffer.data(), false, true);
 

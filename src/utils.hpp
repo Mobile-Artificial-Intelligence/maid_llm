@@ -192,130 +192,27 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     return cpp_params;
 }
 
-std::string format_chat(const struct llama_model * model, struct chat_message * messages[], int n_msg) {
-    size_t alloc_size = 0;
-    // vector holding all allocated string to be passed to llama_chat_apply_template
-    std::vector<std::string> str(n_msg * 2);
-    std::vector<llama_chat_message> chat(n_msg);
+std::string format_chat(const struct llama_model * model, const struct maid_llm_chat * chat) {
+    std::vector<char> buf(chat->buffer_size * 2);
 
-    for (size_t i = 0; i < n_msg; ++i) {
-        auto &curr_msg = messages[i];
+    const llama_chat_message * chat_messages = chat->messages;
 
-        switch (messages[i]->role) {
-            case chat_role::ROLE_SYSTEM:
-                str[i*2 + 0] = "system";
-                break;
-            case chat_role::ROLE_USER:
-                str[i*2 + 0] = "user";
-                break;
-            case chat_role::ROLE_ASSISTANT:
-                str[i*2 + 0] = "assistant";
-                break;
-            default:
-                assert(false);
-        }
-
-        str[i*2 + 1]    = messages[i]->content;
-        alloc_size     += str[i*2 + 1].length();
-        chat[i].role    = str[i*2 + 0].c_str();
-        chat[i].content = str[i*2 + 1].c_str();
+    for (int i = 0; i < chat->message_count; i++) {
+        printf("Message %d: %s\n", i, chat_messages[i].content);
     }
 
-    std::vector<char> buf(alloc_size * 2);
-
     // run the first time to get the total output length
-    int32_t res = llama_chat_apply_template(model, NULL, chat.data(), chat.size(), true, buf.data(), buf.size());
+    int32_t res = llama_chat_apply_template(model, NULL, chat_messages, chat->message_count, true, buf.data(), buf.size());
 
     // if it turns out that our buffer is too small, we resize it
     if ((size_t) res > buf.size()) {
         buf.resize(res);
-        res = llama_chat_apply_template(model, NULL, chat.data(), chat.size(), true, buf.data(), buf.size());
+        res = llama_chat_apply_template(model, NULL, chat_messages, chat->message_count, true, buf.data(), buf.size());
     }
 
     std::string formatted_chat(buf.data(), res);
 
     return formatted_chat;
-}
-
-std::vector<llama_token> parse_messages(int msg_count, chat_message* messages[], llama_context * ctx, llama_model * model, gpt_params params) {
-    std::vector<llama_token> input_tokens;
-
-    std::vector<llama_token> inp_pfx;
-    std::vector<llama_token> res_pfx;
-    std::vector<llama_token> sys_pfx;
-    std::vector<llama_token> sfx;
-
-    bool add_bos = llama_should_add_bos_token(model);
-
-    if (params.instruct) {
-        // prefixes & suffix for instruct mode
-        inp_pfx = ::llama_tokenize(ctx, "### Instruction:\n\n",   add_bos, true);
-        res_pfx = ::llama_tokenize(ctx, "### Response:\n\n",        false, true);
-        sys_pfx = ::llama_tokenize(ctx, "### System:\n\n",          false, true);
-        sfx     = ::llama_tokenize(ctx, "\n\n",                     false, true);
-    } else if (params.chatml) {
-        // prefixes & suffix for chatml mode
-        inp_pfx = ::llama_tokenize(ctx, "<|im_start|>user\n",     add_bos, true);
-        res_pfx = ::llama_tokenize(ctx, "<|im_start|>assistant\n",  false, true);
-        sys_pfx = ::llama_tokenize(ctx, "<|im_start|>system\n",     false, true);
-        sfx     = ::llama_tokenize(ctx, "<|im_end|>\n",             false, true);
-    }
-
-    const auto line_pfx = ::llama_tokenize(ctx, params.input_prefix, false, true);
-    const auto line_sfx = ::llama_tokenize(ctx, params.input_suffix, false, true);
-
-    for (int i = 0; i < msg_count; i++) {
-        chat_message* message = messages[i];
-        std::string buffer(message->content);
-
-        printf("role: %d, content: %s\n", message->role, message->content);
-
-        // Add tokens to embd only if the input buffer is non-empty
-        // Entering a empty line lets the user pass control back
-        if (buffer.length() > 1) {
-            switch (message->role) {
-                case ROLE_USER:
-                    // insert user chat prefix
-                    if (params.instruct || params.chatml) {
-                        input_tokens.insert(input_tokens.end(), inp_pfx.begin(), inp_pfx.end());
-                    }
-
-                    input_tokens.insert(input_tokens.end(), line_pfx.begin(), line_pfx.end());
-                    break;
-                case ROLE_ASSISTANT:
-                    // insert assistant chat prefix
-                    if (params.instruct || params.chatml) {
-                        input_tokens.insert(input_tokens.end(), res_pfx.begin(), res_pfx.end());
-                    }
-                    break;
-                case ROLE_SYSTEM:
-                    // insert system chat prefix
-                    if (params.instruct || params.chatml) {
-                        input_tokens.insert(input_tokens.end(), sys_pfx.begin(), sys_pfx.end());
-                    }
-                    break;
-            }
-
-            if (params.escape) process_escapes(buffer);            
-            const auto line_inp = ::llama_tokenize(ctx, buffer, false, false);
-            input_tokens.insert(input_tokens.end(), line_inp.begin(), line_inp.end());
-
-            if (message->role == ROLE_USER) {
-                input_tokens.insert(input_tokens.end(), line_sfx.begin(), line_sfx.end());
-            }
-
-            if (params.instruct || params.chatml) {
-                input_tokens.insert(input_tokens.end(), sfx.begin(), sfx.end());
-            }
-        }
-    }
-
-    // insert response prefix
-    if (params.instruct || params.chatml) {
-        input_tokens.insert(input_tokens.end(), res_pfx.begin(), res_pfx.end());
-    }
-
-    return input_tokens;
 }
 
 static std::string get_elapsed_seconds(const std::chrono::nanoseconds &__d) {

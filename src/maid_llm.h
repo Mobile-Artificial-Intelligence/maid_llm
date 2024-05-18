@@ -11,6 +11,8 @@ extern "C" {
    #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
+#include "./llama_cpp/llama.h"
+
 #include <stdbool.h>
 
 enum chat_role {
@@ -143,9 +145,10 @@ struct gpt_c_params {
     char *image;                                    // path to an image file
 };
 
-struct chat_message {
-    enum chat_role role;
-    char *content;
+struct maid_llm_chat {
+    const struct llama_chat_message* messages;
+    int message_count;
+    int buffer_size;
 };
 
 typedef void dart_logger(const char *buffer);
@@ -154,7 +157,7 @@ typedef void dart_output(const char *buffer, bool stop);
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output);
 
-EXPORT int maid_llm_prompt(int msg_count, struct chat_message* messages[], dart_output *output, dart_logger *log_output);
+EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output, dart_logger *log_output);
 
 EXPORT void maid_llm_stop(void);
 
