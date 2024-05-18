@@ -28,6 +28,7 @@ ffigen:
   headers:
     entry-points:
       - 'src/maid_llm.h'
+      - 'src/llama_cpp/llama.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
 
