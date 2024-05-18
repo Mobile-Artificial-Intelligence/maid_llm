@@ -147,6 +147,7 @@ struct gpt_c_params {
 
 struct maid_llm_chat {
     const struct llama_chat_message* messages;
+    const char *tmpl;
     int message_count;
     int buffer_size;
 };

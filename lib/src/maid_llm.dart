@@ -63,7 +63,7 @@ class MaidLLM {
     });
   }
 
-  Stream<String> prompt(List<ChatNode> messages) async* {   
+  Stream<String> prompt(List<ChatNode> messages, String template) async* {   
     // Ensure initialization is complete
     await _completer?.future;
     _completer = Completer();
@@ -71,7 +71,7 @@ class MaidLLM {
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
-    final isolate = await Isolate.spawn(_promptIsolate, (messages, _sendPort!));
+    final isolate = await Isolate.spawn(_promptIsolate, (messages, template, _sendPort!));
 
     await for (var data in receivePort) {
       if (data is (String, bool)) {
@@ -107,13 +107,13 @@ class MaidLLM {
     }
   }
 
-  static void _promptIsolate((List<ChatNode>, SendPort) args) {
-    final (messages, sendPort) = args;
+  static void _promptIsolate((List<ChatNode>, String, SendPort) args) {
+    final (messages, template, sendPort) = args;
     _sendPort = sendPort;
 
     try {
       final ret = lib.maid_llm_prompt(
-        _toNativeChat(messages), 
+        _toNativeChat(messages, template), 
         Pointer.fromFunction(_output), 
         Pointer.fromFunction(_logOutput)
       );
@@ -126,7 +126,7 @@ class MaidLLM {
     }
   }
 
-  static Pointer<maid_llm_chat> _toNativeChat(List<ChatNode> messages) {
+  static Pointer<maid_llm_chat> _toNativeChat(List<ChatNode> messages, String template) {
   // Allocate an array of pointers to llama_chat_message
   final chatMessages = calloc<llama_chat_message>(messages.length);
 
@@ -150,6 +150,10 @@ class MaidLLM {
   chat.ref.messages = chatMessages;
   chat.ref.message_count = messageCount;
   chat.ref.buffer_size = bufferSize;
+
+  if (template.isNotEmpty) {
+    chat.ref.tmpl = template.toNativeUtf8().cast<Char>();
+  }
 
   return chat;
 }

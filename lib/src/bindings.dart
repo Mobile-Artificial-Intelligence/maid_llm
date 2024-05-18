@@ -14393,6 +14393,8 @@ final class gpt_c_params extends ffi.Struct {
 final class maid_llm_chat extends ffi.Struct {
   external ffi.Pointer<llama_chat_message> messages;
 
+  external ffi.Pointer<ffi.Char> tmpl;
+
   @ffi.Int()
   external int message_count;
 

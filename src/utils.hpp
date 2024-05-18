@@ -195,19 +195,13 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
 std::string format_chat(const struct llama_model * model, const struct maid_llm_chat * chat) {
     std::vector<char> buf(chat->buffer_size * 2);
 
-    const llama_chat_message * chat_messages = chat->messages;
-
-    for (int i = 0; i < chat->message_count; i++) {
-        printf("Message %d: %s\n", i, chat_messages[i].content);
-    }
-
     // run the first time to get the total output length
-    int32_t res = llama_chat_apply_template(model, NULL, chat_messages, chat->message_count, true, buf.data(), buf.size());
+    int32_t res = llama_chat_apply_template(model, chat->tmpl, chat->messages, chat->message_count, true, buf.data(), buf.size());
 
     // if it turns out that our buffer is too small, we resize it
     if ((size_t) res > buf.size()) {
         buf.resize(res);
-        res = llama_chat_apply_template(model, NULL, chat_messages, chat->message_count, true, buf.data(), buf.size());
+        res = llama_chat_apply_template(model, chat->tmpl, chat->messages, chat->message_count, true, buf.data(), buf.size());
     }
 
     std::string formatted_chat(buf.data(), res);
