@@ -1,3 +1,6 @@
+#ifndef _UTILS_HPP
+#define _UTILS_HPP
+
 #include "maid_llm.h"
 #include "./llama_cpp/llama.h"
 #include "./llama_cpp/ggml.h"
@@ -255,3 +258,5 @@ static bool search_terminators(std::vector<std::vector<llama_token>> terminators
     }
     return false;
 }
+
+#endif // _UTILS_HPP

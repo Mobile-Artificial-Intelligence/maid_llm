@@ -11,7 +11,7 @@ A new Flutter FFI plugin project.
                        DESC
   s.homepage         = 'https://github.com/Mobile-Artificial-Intelligence/maid_llm'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Dane Madsen' => 'email@example.com' }
+  s.author           = { 'Dane Madsen' => 'dane_madsen@hotmail.com' }
   s.dependency 'FlutterMacOS'
   s.swift_version = '5.0'
 
@@ -39,8 +39,8 @@ A new Flutter FFI plugin project.
   s.platform = :osx, '10.11'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'USER_HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/../llama_cpp', '$(PODS_TARGET_SRCROOT)/../llama_cpp/common'],
-    'HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/../llama_cpp', '$(PODS_TARGET_SRCROOT)/../llama_cpp/common'],
+    'USER_HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/llama_cpp', '$(PODS_TARGET_SRCROOT)/llama_cpp/common'],
+    'HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/llama_cpp', '$(PODS_TARGET_SRCROOT)/llama_cpp/common'],
     'OTHER_CFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc'],
     'OTHER_CPLUSPLUSFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc'],
     'GCC_PREPROCESSOR_DEFINITIONS' => ['$(inherited)', 'GGML_USE_METAL=1'],

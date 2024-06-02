@@ -22,12 +22,14 @@ class MaidLLM {
     if (_lib == null) {
       if (Platform.isWindows) {
         _lib = maid_llm(DynamicLibrary.open('maid.dll'));
-      } else if (Platform.isLinux || Platform.isAndroid) {
+      } 
+      else if (Platform.isLinux || Platform.isAndroid) {
         _lib = maid_llm(DynamicLibrary.open('libmaid.so'));
-      } else if (Platform.isMacOS || Platform.isIOS) {
-        throw Exception('Unsupported platform');
-        //_lib = maid_llm(DynamicLibrary.open('bin/llama.dylib'));
-      } else {
+      } 
+      else if (Platform.isMacOS || Platform.isIOS) {
+        _lib = maid_llm(DynamicLibrary.open('maid_llm.framework/maid_llm'));
+      } 
+      else {
         throw Exception('Unsupported platform');
       }
     }
