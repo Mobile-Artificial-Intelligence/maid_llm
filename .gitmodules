@@ -4,3 +4,6 @@
 [submodule "macos/llama_cpp"]
 	path = macos/llama_cpp
 	url = https://github.com/Mobile-Artificial-Intelligence/llama.cpp.git
+[submodule "ios/llama_cpp"]
+	path = ios/llama_cpp
+	url = https://github.com/Mobile-Artificial-Intelligence/llama.cpp.git
