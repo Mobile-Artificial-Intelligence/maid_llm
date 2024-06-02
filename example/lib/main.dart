@@ -20,85 +20,101 @@ class MaidLlmApp extends StatefulWidget {
 }
 
 class _MaidLlmAppState extends State<MaidLlmApp> {
-  List<ChatNode> messages = [];
-  String modelPath = "";
+  TextEditingController _controller = TextEditingController();
+  List<ChatMessage> _messages = [];
+  String? _model;
 
-  Future<String> loadModel() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        dialogTitle: "Load Model File",
-        type: FileType.any,
-        allowMultiple: false,
-        allowCompression: false
-      );
+  void _loadModel() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: "Load Model File",
+      type: FileType.any,
+      allowMultiple: false,
+      allowCompression: false
+    );
 
-      File file;
-      if (result != null && result.files.isNotEmpty) {
-        file = File(result.files.single.path!);
-      } else {
-        throw Exception("File is null");
-      }
-
+    if (result != null && result.files.isNotEmpty) {
       setState(() {
-        modelPath = file.path;
+        _model = result.files.single.path!;
       });
-    } catch (e) {
-      return e.toString();
     }
-
-    return "Model Successfully Loaded";
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _onSubmitted(String value) async {
+    if (_model == null) {
+      return;
+    }
+
+    _messages.add(ChatMessage(role: 'user', content: value));
+
+    setState(() {
+      _controller.clear();
+    });
+
+    GptParams gptParams = GptParams();
+    gptParams.model = _model!;
+
+    Stream<String> stream = MaidLLM(gptParams).prompt(_messages, "");
+
+    _messages.add(ChatMessage(role: 'assistant', content: ""));
+
+    stream.listen((message) {
+      setState(() {
+        final newContent = _messages.last.content + message;
+        final newLastMessage = ChatMessage(role: 'assistant', content: newContent);
+        _messages[_messages.length - 1] = newLastMessage;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    const textStyle = TextStyle(fontSize: 25);
-    const spacerSmall = SizedBox(height: 10);
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text(modelPath.isEmpty ? "No Model Loaded" : modelPath),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.file_download),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: FutureBuilder<String>(
-                    future: loadModel(), 
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        return Text(snapshot.data!);
-                      } else {
-                        return const CircularProgressIndicator();
-                      }
-                    }
-                  ),
-                ));
-              },
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            child: const Column(
-              children: [
-                Text(
-                  'This calls a native function through FFI that is shipped as source in the package. '
-                  'The native code is built as part of the Flutter Runner build.',
-                  style: textStyle,
-                  textAlign: TextAlign.center,
-                ),
-                spacerSmall,
-              ],
-            ),
+      home: buildHome()
+    );
+  }
+
+  Widget buildHome() {
+    return Scaffold(
+      appBar: buildAppBar(),
+      body: buildBody(),
+    );
+  }
+
+  PreferredSizeWidget buildAppBar() {
+    // Text to display model path and a button to load model
+    return AppBar(
+      title: Text(_model ?? 'No model loaded'),
+      leading: IconButton(
+        icon: const Icon(Icons.folder_open),
+        onPressed: _loadModel,
+      ),
+    );
+  }
+
+  Widget buildBody() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: _messages.length,
+            itemBuilder: (context, index) {
+              final message = _messages[index];
+              return ListTile(
+                title: Text(message.role),
+                subtitle: Text(message.content),
+              );
+            },
           ),
         ),
-      ),
+        buildInputField(),
+      ],
+    );
+  }
+
+  Widget buildInputField() {
+    return TextField(
+      controller: _controller,
+      onSubmitted: _onSubmitted,
     );
   }
 }
