@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -20,8 +19,8 @@ class MaidLlmApp extends StatefulWidget {
 }
 
 class _MaidLlmAppState extends State<MaidLlmApp> {
-  TextEditingController _controller = TextEditingController();
-  List<ChatMessage> _messages = [];
+  final TextEditingController _controller = TextEditingController();
+  final List<ChatMessage> _messages = [];
   String? _model;
 
   void _loadModel() async {
@@ -44,9 +43,8 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
       return;
     }
 
-    _messages.add(ChatMessage(role: 'user', content: value));
-
     setState(() {
+      _messages.add(ChatMessage(role: 'user', content: value));
       _controller.clear();
     });
 
@@ -55,7 +53,9 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
 
     Stream<String> stream = MaidLLM(gptParams).prompt(_messages, "");
 
-    _messages.add(ChatMessage(role: 'assistant', content: ""));
+    setState(() {
+      _messages.add(ChatMessage(role: 'assistant', content: ""));
+    });
 
     stream.listen((message) {
       setState(() {
@@ -81,7 +81,6 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
   }
 
   PreferredSizeWidget buildAppBar() {
-    // Text to display model path and a button to load model
     return AppBar(
       title: Text(_model ?? 'No model loaded'),
       leading: IconButton(
@@ -112,9 +111,28 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
   }
 
   Widget buildInputField() {
-    return TextField(
-      controller: _controller,
-      onSubmitted: _onSubmitted,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onSubmitted: _onSubmitted,
+              decoration: const InputDecoration(
+                labelText: 'Enter your message',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () {
+              _onSubmitted(_controller.text);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
