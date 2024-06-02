@@ -71,7 +71,7 @@ class SamplingParams {
   // how strong is guidance
   double cfgScale = 1.0;
 
-  sampling_params get() {
+  sampling_params toNative() {
     final sparams = calloc<sampling_params>();
     sparams.ref.n_prev = nPrev;
     sparams.ref.n_probs = nProbs;

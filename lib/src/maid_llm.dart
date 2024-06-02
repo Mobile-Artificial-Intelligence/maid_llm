@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
-import 'chat_node.dart';
+import 'chat_message.dart';
 import 'gpt_params.dart';
 
 import 'bindings.dart';
@@ -65,7 +65,7 @@ class MaidLLM {
     });
   }
 
-  Stream<String> prompt(List<ChatNode> messages, String template) async* {   
+  Stream<String> prompt(List<ChatMessage> messages, String template) async* {   
     // Ensure initialization is complete
     await _completer?.future;
     _completer = Completer();
@@ -98,7 +98,7 @@ class MaidLLM {
     _sendPort = sendPort;
 
     try {
-      final ret = lib.maid_llm_model_init(params.get(), Pointer.fromFunction(_logOutput));
+      final ret = lib.maid_llm_model_init(params.toNative(), Pointer.fromFunction(_logOutput));
       if (ret != 0) {
         throw Exception('Failed to initialize model');
       }
@@ -109,7 +109,7 @@ class MaidLLM {
     }
   }
 
-  static void _promptIsolate((List<ChatNode>, String, SendPort) args) {
+  static void _promptIsolate((List<ChatMessage>, String, SendPort) args) {
     final (messages, template, sendPort) = args;
     _sendPort = sendPort;
 
@@ -128,7 +128,7 @@ class MaidLLM {
     }
   }
 
-  static Pointer<maid_llm_chat> _toNativeChat(List<ChatNode> messages, String template) {
+  static Pointer<maid_llm_chat> _toNativeChat(List<ChatMessage> messages, String template) {
   // Allocate an array of pointers to llama_chat_message
   final chatMessages = calloc<llama_chat_message>(messages.length);
 
@@ -137,12 +137,7 @@ class MaidLLM {
 
   for (var i = 0; i < messages.length; i++) {
     if (messages[i].content.isNotEmpty) {
-      var message = calloc<llama_chat_message>();
-      message.ref.role = messages[i].role.name.toNativeUtf8().cast<Char>();
-      message.ref.content = messages[i].content.toNativeUtf8().cast<Char>();
-
-      chatMessages[i] = message.ref;
-
+      chatMessages[i] = messages[i].toNative().ref;
       bufferSize += messages[i].content.length;
       messageCount++;
     }

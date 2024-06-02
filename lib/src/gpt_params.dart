@@ -252,7 +252,7 @@ class GptParams {
   /// Path to an image file.
   String image = '';
 
-  Pointer<gpt_c_params> get() {
+  Pointer<gpt_c_params> toNative() {
     final gpt = calloc<gpt_c_params>();
     gpt.ref.seed = seed;
     gpt.ref.n_threads = nThreads;
@@ -286,7 +286,7 @@ class GptParams {
     gpt.ref.defrag_thold = defragThold;
     gpt.ref.rope_scaling_type = ropeScalingType;
     gpt.ref.numa = numa.index;
-    gpt.ref.sparams = sparams.get();
+    gpt.ref.sparams = sparams.toNative();
     gpt.ref.model = model.toNativeUtf8().cast<Char>();
     gpt.ref.model_draft = modelDraft.toNativeUtf8().cast<Char>();
     gpt.ref.model_alias = modelAlias.toNativeUtf8().cast<Char>();
@@ -336,176 +336,6 @@ class GptParams {
     gpt.ref.mmproj = mmproj.toNativeUtf8().cast<Char>();
     gpt.ref.image = image.toNativeUtf8().cast<Char>();
     return gpt;
-  }
-
-  void fromMap(Map<String, dynamic> json) {
-    seed = json['seed'] ?? seed;
-    nThreads = json['nThreads'] ?? nThreads;
-    nThreadsDraft = json['nThreadsDraft'] ?? nThreadsDraft;
-    nThreadsBatch = json['nThreadsBatch'] ?? nThreadsBatch;
-    nThreadsBatchDraft = json['nThreadsBatchDraft'] ?? nThreadsBatchDraft;
-    nPredict = json['nPredict'] ?? nPredict;
-    nCtx = json['nCtx'] ?? nCtx;
-    nBatch = json['nBatch'] ?? nBatch;
-    nKeep = json['nKeep'] ?? nKeep;
-    nDraft = json['nDraft'] ?? nDraft;
-    nChunks = json['nChunks'] ?? nChunks;
-    nParallel = json['nParallel'] ?? nParallel;
-    nSequences = json['nSequences'] ?? nSequences;
-    pSplit = json['pSplit'] ?? pSplit;
-    nGpuLayers = json['nGpuLayers'] ?? nGpuLayers;
-    nGpuLayersDraft = json['nGpuLayersDraft'] ?? nGpuLayersDraft;
-    splitMode = json['splitMode'] != null
-        ? SplitMode.values[json['splitMode']]
-        : splitMode;
-    mainGpu = json['mainGpu'] ?? mainGpu;
-    nBeams = json['nBeams'] ?? nBeams;
-    grpAttnN = json['grpAttnN'] ?? grpAttnN;
-    grpAttnW = json['grpAttnW'] ?? grpAttnW;
-    nPrint = json['nPrint'] ?? nPrint;
-    ropeFreqBase = json['ropeFreqBase'] ?? ropeFreqBase;
-    ropeFreqScale = json['ropeFreqScale'] ?? ropeFreqScale;
-    yarnExtFactor = json['yarnExtFactor'] ?? yarnExtFactor;
-    yarnAttnFactor = json['yarnAttnFactor'] ?? yarnAttnFactor;
-    yarnBetaFast = json['yarnBetaFast'] ?? yarnBetaFast;
-    yarnBetaSlow = json['yarnBetaSlow'] ?? yarnBetaSlow;
-    yarnOrigCtx = json['yarnOrigCtx'] ?? yarnOrigCtx;
-    defragThold = json['defragThold'];
-    ropeScalingType = json['ropeScalingType'] ?? ropeScalingType;
-    numa = json['numa'] != null ? GgmlNumaStrategy.values[json['numa']] : numa;
-    model = json['model'] ?? model;
-    modelDraft = json['modelDraft'] ?? modelDraft;
-    modelAlias = json['modelAlias'] ?? modelAlias;
-    prompt = json['prompt'] ?? prompt;
-    promptFile = json['promptFile'] ?? promptFile;
-    pathPromptCache = json['pathPromptCache'] ?? pathPromptCache;
-    inputPrefix = json['inputPrefix'] ?? inputPrefix;
-    inputSuffix = json['inputSuffix'] ?? inputSuffix;
-    antiprompt = json['antiprompt'] ?? antiprompt;
-    logdir = json['logdir'] ?? logdir;
-    logitsFile = json['logitsFile'] ?? logitsFile;
-    loraBase = json['loraBase'] ?? loraBase;
-    pplStride = json['pplStride'] ?? pplStride;
-    pplOutputType = json['pplOutputType'] ?? pplOutputType;
-    hellaswag = json['hellaswag'] ?? hellaswag;
-    hellaswagTasks = json['hellaswagTasks'] ?? hellaswagTasks;
-    winogrande = json['winogrande'] ?? winogrande;
-    winograndeTasks = json['winograndeTasks'] ?? winograndeTasks;
-    multipleChoice = json['multipleChoice'] ?? multipleChoice;
-    multipleChoiceTasks = json['multipleChoiceTasks'] ?? multipleChoiceTasks;
-    klDivergence = json['klDivergence'] ?? klDivergence;
-    randomPrompt = json['randomPrompt'] ?? randomPrompt;
-    useColor = json['useColor'] ?? useColor;
-    interactive = json['interactive'] ?? interactive;
-    chatml = json['chatml'] ?? chatml;
-    promptCacheAll = json['promptCacheAll'] ?? promptCacheAll;
-    promptCacheRo = json['promptCacheRo'] ?? promptCacheRo;
-    embedding = json['embedding'] ?? embedding;
-    escape = json['escape'] ?? escape;
-    interactiveFirst = json['interactiveFirst'] ?? interactiveFirst;
-    multilineInput = json['multilineInput'] ?? multilineInput;
-    simpleIo = json['simpleIo'] ?? simpleIo;
-    contBatching = json['contBatching'] ?? contBatching;
-    inputPrefixBos = json['inputPrefixBos'] ?? inputPrefixBos;
-    ignoreEos = json['ignoreEos'] ?? ignoreEos;
-    instruct = json['instruct'] ?? instruct;
-    logitsAll = json['logitsAll'] ?? logitsAll;
-    useMmap = json['useMmap'] ?? useMmap;
-    useMlock = json['useMlock'] ?? useMlock;
-    verbosePrompt = json['verbosePrompt'] ?? verbosePrompt;
-    displayPrompt = json['displayPrompt'] ?? displayPrompt;
-    infill = json['infill'] ?? infill;
-    dumpKvCache = json['dumpKvCache'] ?? dumpKvCache;
-    noKvOffload = json['noKvOffload'] ?? noKvOffload;
-    cacheTypeK = json['cacheTypeK'] ?? cacheTypeK;
-    cacheTypeV = json['cacheTypeV'] ?? cacheTypeV;
-    mmproj = json['mmproj'] ?? mmproj;
-    image = json['image'] ?? image;
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'seed': seed,
-      'nThreads': nThreads,
-      'nThreadsDraft': nThreadsDraft,
-      'nThreadsBatch': nThreadsBatch,
-      'nThreadsBatchDraft': nThreadsBatchDraft,
-      'nPredict': nPredict,
-      'nCtx': nCtx,
-      'nBatch': nBatch,
-      'nKeep': nKeep,
-      'nDraft': nDraft,
-      'nChunks': nChunks,
-      'nParallel': nParallel,
-      'nSequences': nSequences,
-      'pSplit': pSplit,
-      'nGpuLayers': nGpuLayers,
-      'nGpuLayersDraft': nGpuLayersDraft,
-      'splitMode': splitMode.index,
-      'mainGpu': mainGpu,
-      'nBeams': nBeams,
-      'grpAttnN': grpAttnN,
-      'grpAttnW': grpAttnW,
-      'nPrint': nPrint,
-      'ropeFreqBase': ropeFreqBase,
-      'ropeFreqScale': ropeFreqScale,
-      'yarnExtFactor': yarnExtFactor,
-      'yarnAttnFactor': yarnAttnFactor,
-      'yarnBetaFast': yarnBetaFast,
-      'yarnBetaSlow': yarnBetaSlow,
-      'yarnOrigCtx': yarnOrigCtx,
-      'defragThold': defragThold,
-      'ropeScalingType': ropeScalingType,
-      'numa': numa.index,
-      'model': model,
-      'modelDraft': modelDraft,
-      'modelAlias': modelAlias,
-      'prompt': prompt,
-      'promptFile': promptFile,
-      'pathPromptCache': pathPromptCache,
-      'inputPrefix': inputPrefix,
-      'inputSuffix': inputSuffix,
-      'antiprompt': antiprompt,
-      'logdir': logdir,
-      'logitsFile': logitsFile,
-      'loraBase': loraBase,
-      'pplStride': pplStride,
-      'pplOutputType': pplOutputType,
-      'hellaswag': hellaswag,
-      'hellaswagTasks': hellaswagTasks,
-      'winogrande': winogrande,
-      'winograndeTasks': winograndeTasks,
-      'multipleChoice': multipleChoice,
-      'multipleChoiceTasks': multipleChoiceTasks,
-      'klDivergence': klDivergence,
-      'randomPrompt': randomPrompt,
-      'useColor': useColor,
-      'interactive': interactive,
-      'chatml': chatml,
-      'promptCacheAll': promptCacheAll,
-      'promptCacheRo': promptCacheRo,
-      'embedding': embedding,
-      'escape': escape,
-      'interactiveFirst': interactiveFirst,
-      'multilineInput': multilineInput,
-      'simpleIo': simpleIo,
-      'contBatching': contBatching,
-      'inputPrefixBos': inputPrefixBos,
-      'ignoreEos': ignoreEos,
-      'instruct': instruct,
-      'logitsAll': logitsAll,
-      'useMmap': useMmap,
-      'useMlock': useMlock,
-      'verbosePrompt': verbosePrompt,
-      'displayPrompt': displayPrompt,
-      'infill': infill,
-      'dumpKvCache': dumpKvCache,
-      'noKvOffload': noKvOffload,
-      'cacheTypeK': cacheTypeK,
-      'cacheTypeV': cacheTypeV,
-      'mmproj': mmproj,
-      'image': image
-    };
   }
 }
 
