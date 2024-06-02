@@ -2,3 +2,4 @@
 // See the comment in ../{projectName}}.podspec for more information.
 #include "../../src/maid_llm.cpp"
 #include "../../src/maid_llm.h"
+#include "../../src/utils.hpp"

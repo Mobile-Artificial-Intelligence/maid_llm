@@ -1,7 +1,7 @@
 #include "maid_llm.h"
-#include "llama.h"
-#include "ggml.h"
-#include "common.h"
+#include "./llama_cpp/llama.h"
+#include "./llama_cpp/ggml.h"
+#include "./llama_cpp/common/common.h"
 
 #include <chrono>
 #include <cassert>

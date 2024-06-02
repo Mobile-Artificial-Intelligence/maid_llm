@@ -45,3 +45,5 @@ flutter:
         ffiPlugin: true
       windows:
         ffiPlugin: true
+      macos:
+        ffiPlugin: true
