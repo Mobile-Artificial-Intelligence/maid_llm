@@ -3,3 +3,4 @@
 #include "../../src/maid_llm.cpp"
 #include "../../src/maid_llm.h"
 #include "../../src/utils.hpp"
+#include "../../src/build-info.c"

@@ -20,6 +20,7 @@ add_library(maid_llm SHARED
   ${MAID_LLM_SRC_DIR}/maid_llm.cpp
   ${MAID_LLM_SRC_DIR}/maid_llm.h
   ${MAID_LLM_SRC_DIR}/utils.hpp
+  ${MAID_LLM_SRC_DIR}/build-info.c
   ${LLAMA_CPP_DIR}/ggml.c
   ${LLAMA_CPP_DIR}/ggml.h
   ${LLAMA_CPP_DIR}/ggml-alloc.c
