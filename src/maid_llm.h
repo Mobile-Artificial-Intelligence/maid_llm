@@ -111,10 +111,8 @@ struct gpt_c_params {
 
     bool   kl_divergence;                           // compute KL-divergence
 
-    bool random_prompt;                             // do not randomize prompt if none provided
     bool use_color;                                 // use color to distinguish generations and inputs
     bool interactive;                               // interactive mode
-    bool chatml;                                    // chatml mode (used for models trained on chatml syntax)
     bool prompt_cache_all;                          // save user input and generations to prompt cache
     bool prompt_cache_ro;                           // open the prompt cache read-only and do not update it
 
@@ -127,7 +125,6 @@ struct gpt_c_params {
 
     bool input_prefix_bos;                          // prefix BOS to user inputs, preceding input_prefix
     bool ignore_eos;                                // ignore generated EOS tokens
-    bool instruct;                                  // instruction mode (used for Alpaca models)
     bool logits_all;                                // return logits for all tokens in the batch
     bool use_mmap;                                  // use mmap for faster loads
     bool use_mlock;                                 // use mlock to keep model in memory

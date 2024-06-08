@@ -39,17 +39,6 @@ EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_o
         return 1;
     }
 
-    if (params.instruct) {
-        terminator_sequences.push_back(llama_tokenize(model, "### Instruction:", false, true));
-        terminator_sequences.push_back(llama_tokenize(model, "### Response:", false, true));
-        terminator_sequences.push_back(llama_tokenize(model, "### System:", false, true));
-    }
-
-    if (params.chatml) {
-        terminator_sequences.push_back(llama_tokenize(model, "<|im_start|>", false, true));
-        terminator_sequences.push_back(llama_tokenize(model, "<|im_end|>", false, true));
-    }
-
     terminator_sequences.push_back(llama_tokenize(model, "\n\n\n\n\n", false, true));
 
     auto init_end_time = std::chrono::high_resolution_clock::now();

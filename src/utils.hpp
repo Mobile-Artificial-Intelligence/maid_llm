@@ -160,10 +160,8 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
 
     cpp_params.kl_divergence            = c_params.kl_divergence;
 
-    cpp_params.random_prompt            = c_params.random_prompt;
     cpp_params.use_color                = c_params.use_color;
     cpp_params.interactive              = c_params.interactive;
-    cpp_params.chatml                   = c_params.chatml;
     cpp_params.prompt_cache_all         = c_params.prompt_cache_all;
     cpp_params.prompt_cache_ro          = c_params.prompt_cache_ro;
 
@@ -176,7 +174,6 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
 
     cpp_params.input_prefix_bos         = c_params.input_prefix_bos;
     cpp_params.ignore_eos               = c_params.ignore_eos;
-    cpp_params.instruct                 = c_params.instruct;
     cpp_params.logits_all               = c_params.logits_all;
     cpp_params.use_mmap                 = c_params.use_mmap;
     cpp_params.use_mlock                = c_params.use_mlock;
@@ -190,7 +187,7 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     cpp_params.cache_type_v             = c_params.cache_type_v;
 
     cpp_params.mmproj                   = c_params.mmproj;
-    cpp_params.image                    = c_params.image;
+    cpp_params.image.push_back(c_params.image);
 
     return cpp_params;
 }

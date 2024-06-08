@@ -45,8 +45,7 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
       _controller.clear();
     });
 
-    GptParams gptParams = GptParams();
-    gptParams.model = _model!;
+    GptParams gptParams = GptParams(_model!);
 
     Stream<String> stream = MaidLLM(gptParams).prompt(_messages, "");
 

@@ -109,7 +109,7 @@ class GptParams {
   SamplingParams sparams = SamplingParams();
 
   /// Model path.
-  String model = '';
+  final String model;
 
   /// Draft model for speculative decoding.
   String modelDraft = '';
@@ -171,17 +171,11 @@ class GptParams {
   /// Compute KL-divergence.
   bool klDivergence = false;
 
-  /// Do not randomize prompt if none provided.
-  bool randomPrompt = false;
-
   /// Use color to distinguish generations and inputs.
   bool useColor = false;
 
   /// Interactive mode.
   bool interactive = false;
-
-  /// Chatml mode (used for models trained on chatml syntax).
-  bool chatml = false;
 
   /// Save user input and generations to prompt cache.
   bool promptCacheAll = false;
@@ -252,6 +246,8 @@ class GptParams {
   /// Path to an image file.
   String image = '';
 
+  GptParams(this.model);
+
   Pointer<gpt_c_params> toNative() {
     final gpt = calloc<gpt_c_params>();
     gpt.ref.seed = seed;
@@ -308,10 +304,8 @@ class GptParams {
     gpt.ref.multiple_choice = multipleChoice;
     gpt.ref.multiple_choice_tasks = multipleChoiceTasks;
     gpt.ref.kl_divergence = klDivergence;
-    gpt.ref.random_prompt = randomPrompt;
     gpt.ref.use_color = useColor;
     gpt.ref.interactive = interactive;
-    gpt.ref.chatml = chatml;
     gpt.ref.prompt_cache_all = promptCacheAll;
     gpt.ref.prompt_cache_ro = promptCacheRo;
     gpt.ref.embedding = embedding;
@@ -322,7 +316,6 @@ class GptParams {
     gpt.ref.cont_batching = contBatching;
     gpt.ref.input_prefix_bos = inputPrefixBos;
     gpt.ref.ignore_eos = ignoreEos;
-    gpt.ref.instruct = instruct;
     gpt.ref.logits_all = logitsAll;
     gpt.ref.use_mmap = useMmap;
     gpt.ref.use_mlock = useMlock;
