@@ -1,6 +1,4 @@
 import 'dart:ffi';
-import 'dart:math';
-
 import 'package:ffi/ffi.dart';
 
 import 'bindings.dart';
