@@ -22,26 +22,36 @@ A new Flutter FFI plugin project.
   # `../src/*` so that the C sources can be shared among all target platforms.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*', 
-                   'llama_cpp/llama.cpp',
-                   'llama_cpp/ggml.c',
-                   'llama_cpp/ggml-alloc.c',
-                   'llama_cpp/ggml-backend.c',
-                   'llama_cpp/ggml-metal.m',
-                   'llama_cpp/ggml-quants.c',
-                   'llama_cpp/unicode.cpp',
-                   'llama_cpp/unicode-data.cpp',
-                   'llama_cpp/common/common.cpp',
-                   'llama_cpp/common/build-info.cpp',
-                   'llama_cpp/common/grammar-parser.cpp',
-                   'llama_cpp/common/json-schema-to-grammar.cpp',
-                   'llama_cpp/common/sampling.cpp',
-                   'llama_cpp/common/stb_image.h',
+    'llama_cpp/src/llama.cpp',
+    'llama_cpp/ggml/src/ggml.c',
+    'llama_cpp/ggml/src/ggml-alloc.c',
+    'llama_cpp/ggml/src/ggml-backend.c',
+    'llama_cpp/ggml/src/ggml-metal.m',
+    'llama_cpp/ggml/src/ggml-quants.c',
+    'llama_cpp/src/unicode.cpp',
+    'llama_cpp/src/unicode-data.cpp',
+    'llama_cpp/common/common.cpp',
+    'llama_cpp/common/build-info.cpp',
+    'llama_cpp/common/grammar-parser.cpp',
+    'llama_cpp/common/json-schema-to-grammar.cpp',
+    'llama_cpp/common/sampling.cpp',
+    'llama_cpp/common/stb_image.h',
   s.frameworks = 'Foundation', 'Metal', 'MetalKit'
   s.platform = :ios, '12.0'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'USER_HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/llama_cpp', '$(PODS_TARGET_SRCROOT)/llama_cpp/common'],
-    'HEADER_SEARCH_PATHS' => ['$(PODS_TARGET_SRCROOT)/llama_cpp', '$(PODS_TARGET_SRCROOT)/llama_cpp/common'],
+    'USER_HEADER_SEARCH_PATHS' => [
+      '$(PODS_TARGET_SRCROOT)/llama_cpp', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/include'
+    ],
+    'HEADER_SEARCH_PATHS' => [
+      '$(PODS_TARGET_SRCROOT)/llama_cpp', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/include'
+    ],
     'OTHER_CFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc'],
     'OTHER_CPLUSPLUSFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc'],
     'GCC_PREPROCESSOR_DEFINITIONS' => ['$(inherited)', 'GGML_USE_METAL=1'],
@@ -49,16 +59,16 @@ A new Flutter FFI plugin project.
   s.script_phases = [
     {
       :name => 'Build Metal Library',
-      :input_files => ["${PODS_TARGET_SRCROOT}/llama_cpp/ggml-metal.metal"],
+      :input_files => ["${PODS_TARGET_SRCROOT}/llama_cpp/ggml/src/ggml-metal.metal"],
       :output_files => ["${METAL_LIBRARY_OUTPUT_DIR}/default.metallib"],
       :execution_position => :after_compile,
       :script => <<-SCRIPT
-set -e
-set -u
-set -o pipefail
-cd "${PODS_TARGET_SRCROOT}/llama_cpp"
-xcrun metal -target "air64-${LLVM_TARGET_TRIPLE_VENDOR}-${LLVM_TARGET_TRIPLE_OS_VERSION}${LLVM_TARGET_TRIPLE_SUFFIX:-\"\"}" -ffast-math -std=ios-metal2.3 -o "${METAL_LIBRARY_OUTPUT_DIR}/default.metallib" *.metal
-SCRIPT
+      set -e
+      set -u
+      set -o pipefail
+      cd "${PODS_TARGET_SRCROOT}/llama_cpp/ggml/src"
+      xcrun metal -target "air64-${LLVM_TARGET_TRIPLE_VENDOR}-${LLVM_TARGET_TRIPLE_OS_VERSION}${LLVM_TARGET_TRIPLE_SUFFIX:-\"\"}" -ffast-math -std=ios-metal2.3 -o "${METAL_LIBRARY_OUTPUT_DIR}/default.metallib" *.metal
+      SCRIPT
     }
   ]
 end

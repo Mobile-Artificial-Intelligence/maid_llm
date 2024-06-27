@@ -27,8 +27,9 @@ add_library(maid_llm SHARED
 # Add this line to include the llama_cpp directory
 target_include_directories(maid_llm PRIVATE
   ${MAID_LLM_DIR}
-  ${MAID_LLM_DIR}/llama_cpp
+  ${MAID_LLM_DIR}/llama_cpp/include
   ${MAID_LLM_DIR}/llama_cpp/common
+  ${MAID_LLM_DIR}/llama_cpp/ggml/include
 )
 
 target_link_libraries(maid_llm llama common)

@@ -63,9 +63,6 @@ class GptParams {
   /// The GPU that is used for scratch and small tensors. Defaults to 0.
   int mainGpu = 0;
 
-  /// If non-zero then use beam search of given width. Defaults to 0.
-  int nBeams = 0;
-
   /// Group-attention factor. Defaults to 1.
   int grpAttnN = 1;
 
@@ -268,7 +265,6 @@ class GptParams {
     gpt.ref.n_gpu_layers_draft = nGpuLayersDraft;
     gpt.ref.split_mode = splitMode.index;
     gpt.ref.main_gpu = mainGpu;
-    gpt.ref.n_beams = nBeams;
     gpt.ref.grp_attn_n = grpAttnN;
     gpt.ref.grp_attn_w = grpAttnW;
     gpt.ref.n_print = nPrint;

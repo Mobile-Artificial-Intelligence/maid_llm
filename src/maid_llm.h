@@ -11,7 +11,7 @@ extern "C" {
    #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
-#include "./llama_cpp/llama.h"
+#include "llama.h"
 
 #include <stdbool.h>
 
@@ -67,7 +67,6 @@ struct gpt_c_params {
     int n_gpu_layers_draft;                         // number of layers to store in VRAM for the draft model (-1 - use default)
     char split_mode;                                // how to split the model across GPUs
     int main_gpu;                                   // the GPU that is used for scratch and small tensors
-    int n_beams;                                    // if non-zero then use beam search of given width.
     int grp_attn_n;                                 // group-attention factor
     int grp_attn_w;                                 // group-attention width
     int n_print;                                    // print token count every n tokens (-1 = disabled)

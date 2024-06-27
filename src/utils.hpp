@@ -2,9 +2,9 @@
 #define _UTILS_HPP
 
 #include "maid_llm.h"
-#include "./llama_cpp/llama.h"
-#include "./llama_cpp/ggml.h"
-#include "./llama_cpp/common/common.h"
+#include "llama.h"
+#include "ggml.h"
+#include "common.h"
 
 #include <chrono>
 #include <cassert>
@@ -72,7 +72,6 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     };
 
     cpp_params.main_gpu                 = c_params.main_gpu;
-    cpp_params.n_beams                  = c_params.n_beams;
     cpp_params.grp_attn_n               = c_params.grp_attn_n;
     cpp_params.grp_attn_w               = c_params.grp_attn_w;
     cpp_params.n_print                  = c_params.n_print;
@@ -122,6 +121,8 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
             break;
         case 5:
             cpp_params.numa = GGML_NUMA_STRATEGY_COUNT;
+            break;
+        default:
             assert(false);
             break;
     };

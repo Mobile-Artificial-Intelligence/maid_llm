@@ -10,47 +10,37 @@ find_package(Vulkan)
 if (Vulkan_FOUND)
   add_compile_definitions(GGML_USE_VULKAN)
   set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} Vulkan::Vulkan)
-  set(GGML_HEADERS_VULKAN ${LLAMA_CPP_DIR}/ggml-vulkan.h)
-  set(GGML_SOURCES_VULKAN ${LLAMA_CPP_DIR}/ggml-vulkan.cpp)
+  set(GGML_HEADERS_VULKAN ${LLAMA_CPP_DIR}/ggml/src/ggml-vulkan.h)
+  set(GGML_SOURCES_VULKAN ${LLAMA_CPP_DIR}/ggml/src/ggml-vulkan.cpp)
 else()
   message(WARNING "Vulkan not found, building without Vulkan support")
 endif()
 
 add_library(maid_llm SHARED
   ${MAID_LLM_SRC_DIR}/maid_llm.cpp
-  ${MAID_LLM_SRC_DIR}/maid_llm.h
-  ${MAID_LLM_SRC_DIR}/utils.hpp
   ${MAID_LLM_SRC_DIR}/build-info.c
-  ${LLAMA_CPP_DIR}/ggml.c
-  ${LLAMA_CPP_DIR}/ggml.h
-  ${LLAMA_CPP_DIR}/ggml-alloc.c
-  ${LLAMA_CPP_DIR}/ggml-alloc.h
-  ${LLAMA_CPP_DIR}/ggml-backend.c
-  ${LLAMA_CPP_DIR}/ggml-backend.h
-  ${LLAMA_CPP_DIR}/ggml-quants.c
-  ${LLAMA_CPP_DIR}/ggml-quants.h
-  ${LLAMA_CPP_DIR}/llama.cpp
-  ${LLAMA_CPP_DIR}/llama.h
-  ${LLAMA_CPP_DIR}/sgemm.cpp
-  ${LLAMA_CPP_DIR}/sgemm.h
-  ${LLAMA_CPP_DIR}/unicode.h
-  ${LLAMA_CPP_DIR}/unicode.cpp
-  ${LLAMA_CPP_DIR}/unicode-data.cpp
+  ${LLAMA_CPP_DIR}/ggml/src/ggml.c
+  ${LLAMA_CPP_DIR}/ggml/src/ggml-alloc.c
+  ${LLAMA_CPP_DIR}/ggml/src/ggml-backend.c
+  ${LLAMA_CPP_DIR}/ggml/src/ggml-quants.c
+  ${LLAMA_CPP_DIR}/src/llama.cpp
+  ${LLAMA_CPP_DIR}/src/unicode.cpp
+  ${LLAMA_CPP_DIR}/src/unicode-data.cpp
   ${LLAMA_CPP_DIR}/common/common.cpp
   ${LLAMA_CPP_DIR}/common/common.h
   ${LLAMA_CPP_DIR}/common/sampling.cpp
   ${LLAMA_CPP_DIR}/common/sampling.h
   ${LLAMA_CPP_DIR}/common/grammar-parser.cpp
-  ${LLAMA_CPP_DIR}/common/grammar-parser.h
-  ${LLAMA_CPP_DIR}/common/json.hpp
   ${LLAMA_CPP_DIR}/common/json-schema-to-grammar.cpp
   ${GGML_SOURCES_VULKAN}
   ${GGML_HEADERS_VULKAN}
 )
 
 # Add this line to include the llama_cpp directory
-target_include_directories(maid_llm PRIVATE 
-  ${LLAMA_CPP_DIR}
+target_include_directories(maid_llm PRIVATE
+  ${MAID_LLM_SRC_DIR}
+  ${LLAMA_CPP_DIR}/ggml/include
+  ${LLAMA_CPP_DIR}/include
   ${LLAMA_CPP_DIR}/common
 )
 
