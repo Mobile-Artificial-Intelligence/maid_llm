@@ -71,10 +71,6 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
 
     std::vector<llama_token> input_tokens = llama_tokenize(model, buffer.data(), false, true);
 
-    for (auto token : input_tokens) {
-        printf("Token: %s\n", llama_token_to_piece(ctx, token).c_str());
-    }
-
     if (n_predict <= 0 || n_predict > n_ctx) {
         n_predict = n_ctx;
     }
