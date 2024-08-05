@@ -20,26 +20,28 @@
 static std::atomic_bool stop_generation(false);
 static std::mutex continue_mutex;
 
-static llama_model * model;
-static gpt_params params;
+static llama_model * model_p;
+static gpt_params * params_p;
 
 static std::vector<std::vector<llama_token>> terminator_sequences;
 
 EXPORT int maid_llm_model_init(struct gpt_c_params *c_params, dart_logger *log_output) {
     auto init_start_time = std::chrono::high_resolution_clock::now();
 
-    params = from_c_params(*c_params);
+    gpt_params params = from_c_params(*c_params);
 
     llama_backend_init();
     llama_numa_init(params.numa);
 
     llama_model_params mparams = llama_model_params_from_gpt_params(params);
-    model = llama_load_model_from_file(params.model.c_str(), mparams);
-    if (model == NULL) {
+    model_p = llama_load_model_from_file(params.model.c_str(), mparams);
+    if (model_p == NULL) {
         return 1;
     }
 
-    terminator_sequences.push_back(llama_tokenize(model, "\n\n\n\n\n", false, true));
+    params_p = &params;
+
+    terminator_sequences.push_back(llama_tokenize(model_p, "\n\n\n\n\n", false, true));
 
     auto init_end_time = std::chrono::high_resolution_clock::now();
     log_output(("Model init in " + get_elapsed_seconds(init_end_time - init_start_time)).c_str());
@@ -53,23 +55,23 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
     std::lock_guard<std::mutex> lock(continue_mutex);
     stop_generation.store(false);
 
-    llama_context_params lparams = llama_context_params_from_gpt_params(params);
+    llama_context_params lparams = llama_context_params_from_gpt_params(*params_p);
 
-    llama_context * ctx = llama_new_context_with_model(model, lparams);
+    llama_context * ctx = llama_new_context_with_model(model_p, lparams);
 
     int n_past = 0;
     int n_ctx = llama_n_ctx(ctx);
-    int n_predict = params.n_predict;
+    int n_predict = params_p->n_predict;
 
     for (int i = 0; i < chat->message_count; i++) {
         printf("Message %d: %s\n", i, chat->messages[i].content);
     }
 
-    llama_sampling_context * ctx_sampling = llama_sampling_init(params.sparams);
+    llama_sampling_context * ctx_sampling = llama_sampling_init(params_p->sparams);
 
-    std::string buffer = format_chat(model, chat);
+    std::string buffer = format_chat(model_p, chat);
 
-    std::vector<llama_token> input_tokens = llama_tokenize(model, buffer.data(), false, true);
+    std::vector<llama_token> input_tokens = llama_tokenize(model_p, buffer.data(), false, true);
 
     if (n_predict <= 0 || n_predict > n_ctx) {
         n_predict = n_ctx;
@@ -95,11 +97,11 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
     
     // Should not run without any tokens
     if (input_tokens.empty()) {
-        input_tokens.push_back(llama_token_bos(model));
+        input_tokens.push_back(llama_token_bos(model_p));
         log_output(("input_tokens was considered empty and bos was added: " + LOG_TOKENS_TOSTR_PRETTY(ctx, input_tokens)).c_str());
     }
 
-    eval_tokens(ctx, input_tokens, params.n_batch, &n_past);
+    eval_tokens(ctx, input_tokens, params_p->n_batch, &n_past);
 
     while (!stop_generation.load()) {
         // sample the most likely token
@@ -109,7 +111,7 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
         llama_sampling_accept(ctx_sampling, ctx, id, true);
 
         // is it an end of stream?
-        if (id == llama_token_eos(model)) {
+        if (id == llama_token_eos(model_p)) {
             log_output("Breaking due to eos");
             break;
         }
@@ -137,6 +139,6 @@ EXPORT void maid_llm_stop(void) {
 
 EXPORT void maid_llm_cleanup(void) {
     stop_generation.store(true);
-    llama_free_model(model);
+    llama_free_model(model_p);
     llama_backend_free();
 }
