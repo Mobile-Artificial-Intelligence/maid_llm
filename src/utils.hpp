@@ -145,8 +145,6 @@ static gpt_params from_c_params(struct gpt_c_params c_params) {
     cpp_params.logdir                   = c_params.logdir;
     cpp_params.logits_file              = c_params.logits_file;
 
-    cpp_params.lora_base                = c_params.lora_base;
-
     cpp_params.ppl_stride               = c_params.ppl_stride;
     cpp_params.ppl_output_type          = c_params.ppl_output_type;
 

@@ -138,9 +138,6 @@ class GptParams {
   /// File for saving *all* logits.
   String logitsFile = '';
 
-  /// Base model path for the lora adapter.
-  String loraBase = '';
-
   /// Stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
   int pplStride = 0;
 
@@ -290,7 +287,6 @@ class GptParams {
     gpt.ref.antiprompt = antiprompt.toNativeUtf8().cast<Char>();
     gpt.ref.logdir = logdir.toNativeUtf8().cast<Char>();
     gpt.ref.logits_file = logitsFile.toNativeUtf8().cast<Char>();
-    gpt.ref.lora_base = loraBase.toNativeUtf8().cast<Char>();
     gpt.ref.ppl_stride = pplStride;
     gpt.ref.ppl_output_type = pplOutputType;
     gpt.ref.hellaswag = hellaswag;

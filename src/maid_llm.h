@@ -11,7 +11,7 @@ extern "C" {
    #define EXPORT __attribute__((visibility("default"))) __attribute__((used))
 #endif
 
-#include "llama.h"
+#include "./llama_cpp/include/llama.h"
 
 #include <stdbool.h>
 
@@ -94,7 +94,6 @@ struct gpt_c_params {
     char *antiprompt;                               // string upon seeing which more user input is prompted
     char *logdir;                                   // directory in which to save YAML log files
     char *logits_file;                              // file for saving *all* logits
-    char *lora_base;                                // base model path for the lora adapter
 
     int  ppl_stride;                                // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
     int  ppl_output_type;                           // = 0 -> ppl output is as usual, = 1 -> ppl output is num_tokens, ppl, one per line
