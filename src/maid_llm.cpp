@@ -101,6 +101,10 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
 
     eval_tokens(ctx, input_tokens, params.n_batch, &n_past);
 
+    log_output(("n_past: " + std::to_string(n_past)).c_str());
+
+    int n_tokens = 0;
+
     while (!stop_generation.load()) {
         // sample the most likely token
         llama_token id = llama_sampling_sample(ctx_sampling, ctx, NULL, 0);
@@ -119,6 +123,13 @@ EXPORT int maid_llm_prompt(const struct maid_llm_chat* chat, dart_output *output
         // evaluate the token
         if (!eval_id(ctx, id, &n_past)) {
             log_output("Breaking due to eval_id");
+            break;
+        }
+
+        n_tokens++;
+
+        if (n_tokens >= n_predict) {
+            log_output("Breaking due to n_tokens");
             break;
         }
     }
