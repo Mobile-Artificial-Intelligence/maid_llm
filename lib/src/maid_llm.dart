@@ -143,7 +143,7 @@ class MaidLLM {
     }
   }
 
-  var chat = calloc<maid_llm_chat>();
+  final chat = calloc<maid_llm_chat>();
   chat.ref.messages = chatMessages;
   chat.ref.message_count = messageCount;
   chat.ref.buffer_size = bufferSize;
