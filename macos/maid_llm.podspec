@@ -22,7 +22,11 @@ A new Flutter FFI plugin project.
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*', 
                    'llama_cpp/src/llama.cpp',
+                   'llama_cpp/src/llama-grammar.cpp',
+                   'llama_cpp/src/llama-sampling.cpp',
+                   'llama_cpp/src/llama-vocab.cpp',
                    'llama_cpp/ggml/src/ggml.c',
+                   'llama_cpp/ggml/src/ggml-aarch64.c',
                    'llama_cpp/ggml/src/ggml-alloc.c',
                    'llama_cpp/ggml/src/ggml-backend.c',
                    'llama_cpp/ggml/src/ggml-metal.m',

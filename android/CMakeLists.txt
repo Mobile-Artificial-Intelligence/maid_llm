@@ -20,10 +20,14 @@ add_library(maid_llm SHARED
   ${MAID_LLM_SRC_DIR}/maid_llm.cpp
   ${MAID_LLM_SRC_DIR}/build-info.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml.c
+  ${LLAMA_CPP_DIR}/ggml/src/ggml-aarch64.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml-alloc.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml-backend.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml-quants.c
   ${LLAMA_CPP_DIR}/src/llama.cpp
+  ${LLAMA_CPP_DIR}/src/llama-grammar.cpp
+  ${LLAMA_CPP_DIR}/src/llama-sampling.cpp
+  ${LLAMA_CPP_DIR}/src/llama-vocab.cpp
   ${LLAMA_CPP_DIR}/src/unicode.cpp
   ${LLAMA_CPP_DIR}/src/unicode-data.cpp
   ${LLAMA_CPP_DIR}/common/common.cpp
