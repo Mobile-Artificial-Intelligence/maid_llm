@@ -1,6 +1,7 @@
 part of '../lcpp.dart';
 
 typedef InitIsolateArguments = ({
+  String modelPath,
   ModelParams modelParams,
   SendPort sendPort
 });
@@ -10,7 +11,7 @@ class LlamaCPP {
   static SendPort? _sendPort;
 
   static lcpp? _lib;
-  static llama_model_params? _modelParams;
+  static ffi.Pointer<llama_model>? _model;
 
   static void Function(String)? _log;
 
@@ -20,13 +21,13 @@ class LlamaCPP {
   static lcpp get lib {
     if (_lib == null) {
       if (Platform.isWindows) {
-        _lib = lcpp(DynamicLibrary.open('llama.dll'));
+        _lib = lcpp(ffi.DynamicLibrary.open('llama.dll'));
       } 
       else if (Platform.isLinux || Platform.isAndroid) {
-        _lib = lcpp(DynamicLibrary.open('llama.so'));
+        _lib = lcpp(ffi.DynamicLibrary.open('llama.so'));
       } 
       else if (Platform.isMacOS || Platform.isIOS) {
-        _lib = lcpp(DynamicLibrary.open('lcpp.framework/lcpp'));
+        _lib = lcpp(ffi.DynamicLibrary.open('lcpp.framework/lcpp'));
       } 
       else {
         throw Exception('Unsupported platform');
@@ -96,9 +97,14 @@ class LlamaCPP {
     _sendPort = args.sendPort;
 
     try {
-      _modelParams = args.modelParams.toNative();
-      
+      lib.ggml_backend_load_all();
 
+      final modelParams = args.modelParams.toNative();
+      
+      _model = lib.llama_load_model_from_file(
+        args.modelPath.toNativeUtf8().cast<ffi.Char>(), 
+        modelParams
+      );
 
       _sendPort!.send(1);
     } catch (e) {
@@ -146,7 +152,7 @@ class LlamaCPP {
   chat.ref.buffer_size = bufferSize;
 
   if (template.isNotEmpty) {
-    chat.ref.tmpl = template.toNativeUtf8().cast<Char>();
+    chat.ref.tmpl = template.toNativeUtf8().cast<ffi.Char>();
   }
 
   return chat;
