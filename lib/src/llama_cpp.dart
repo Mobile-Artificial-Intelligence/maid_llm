@@ -3,6 +3,7 @@ part of '../lcpp.dart';
 typedef InitIsolateArguments = ({
   String modelPath,
   ModelParams modelParams,
+  ContextParams contextParams,
   SendPort sendPort
 });
 
@@ -12,6 +13,7 @@ class LlamaCPP {
 
   static lcpp? _lib;
   static ffi.Pointer<llama_model>? _model;
+  static ffi.Pointer<llama_context>? _context;
 
   static void Function(String)? _log;
 
@@ -36,7 +38,7 @@ class LlamaCPP {
     return _lib!;
   }
 
-  LlamaCPP(String modelPath, ModelParams modelParams, {void Function(String)? log}) {
+  LlamaCPP(String modelPath, ModelParams modelParams, ContextParams contextParams, {void Function(String)? log}) {
     _log = log;
 
     if (_log != null) {
@@ -51,19 +53,21 @@ class LlamaCPP {
     final initParams = (
       modelPath: modelPath,
       modelParams: modelParams,
+      contextParams: contextParams,
       sendPort: _sendPort!
     );
 
     Isolate.spawn(_initIsolate, initParams).then((value) async {
       receivePort.listen((data) {
-        if (data is int) {
-          if (data == 0) {
-            _completer!.complete();
-          } else {
-            _completer!.completeError(Exception('Failed to initialize LLM, Exception Uncaught'));
-          } 
-        } else if (data is String && _log != null) {
-          _log!(data);
+        if (data is String) {
+          if (_log != null) {
+            _log!(data);
+          }
+
+          _completer!.completeError(Exception(data));
+        }
+        else {
+          _completer!.complete();
         }
       });
 
@@ -100,8 +104,6 @@ class LlamaCPP {
   }
 
   static void _initIsolate(InitIsolateArguments args) {
-    _sendPort = args.sendPort;
-
     try {
       lib.ggml_backend_load_all();
 
@@ -111,10 +113,17 @@ class LlamaCPP {
         args.modelPath.toNativeUtf8().cast<ffi.Char>(), 
         modelParams
       );
+      assert(_model != null && _model != ffi.nullptr, 'Failed to load model');
 
-      _sendPort!.send(1);
+      final contextParams = args.contextParams.toNative();
+
+      _context = lib.llama_init_from_model(_model!, contextParams);
+      assert(_context != null && _context != ffi.nullptr, 'Failed to initialize context');
+
+      args.sendPort.send(null);
+      return;
     } catch (e) {
-      _sendPort!.send(e.toString());
+      args.sendPort.send(e.toString());
     }
   }
 
