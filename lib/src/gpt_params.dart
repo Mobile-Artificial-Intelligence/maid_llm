@@ -1,11 +1,4 @@
-import 'dart:ffi';
-import 'dart:math';
-
-import 'bindings.dart';
-
-import 'package:ffi/ffi.dart';
-
-import 'sampling_params.dart';
+part of '../maid_llm.dart';
 
 class GptParams {
   /// Seed for random number generation. Defaults to a random integer.

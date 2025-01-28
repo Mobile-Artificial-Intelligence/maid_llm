@@ -1,33 +1,24 @@
-import 'dart:async';
-import 'dart:ffi';
-import 'dart:io';
-import 'dart:isolate';
+part of '../maid_llm.dart';
 
-import 'package:ffi/ffi.dart';
-import 'chat_message.dart';
-import 'gpt_params.dart';
-
-import 'bindings.dart';
-
-class MaidLLM {
+class LlamaCPP {
   static Completer? _completer;
   static SendPort? _sendPort;
-  static maid_llm? _lib;
+  static lcpp? _lib;
   static void Function(String)? _log;
 
   /// Getter for the Llama library.
   ///
   /// Loads the library based on the current platform.
-  static maid_llm get lib {
+  static lcpp get lib {
     if (_lib == null) {
       if (Platform.isWindows) {
-        _lib = maid_llm(DynamicLibrary.open('maid.dll'));
+        _lib = lcpp(DynamicLibrary.open('llama.dll'));
       } 
       else if (Platform.isLinux || Platform.isAndroid) {
-        _lib = maid_llm(DynamicLibrary.open('libmaid.so'));
+        _lib = lcpp(DynamicLibrary.open('llama.so'));
       } 
       else if (Platform.isMacOS || Platform.isIOS) {
-        _lib = maid_llm(DynamicLibrary.open('maid_llm.framework/maid_llm'));
+        _lib = lcpp(DynamicLibrary.open('maid_llm.framework/maid_llm'));
       } 
       else {
         throw Exception('Unsupported platform');
@@ -36,7 +27,7 @@ class MaidLLM {
     return _lib!;
   }
 
-  MaidLLM(GptParams params, {void Function(String)? log}) {
+  LCPP(GptParams params, {void Function(String)? log}) {
     _log = log;
 
     if (_log != null) {

@@ -21,14 +21,16 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 ffigen:
-  name: 'maid_llm'
+  name: 'lcpp'
   description: 'llama.cpp binding'
   output: 'lib/src/bindings.dart'
   ignore-source-errors: true
   headers:
     entry-points:
-      - 'src/maid_llm.h'
-      - 'src/llama_cpp/llama.h'
+      - 'src/llama_cpp/include/llama.h'
+      - 'src/llama_cpp/ggml/include/ggml.h'
+      - 'src/llama_cpp/ggml/include/ggml-cpu.h'
+      - 'src/llama_cpp/ggml/include/ggml-backend.h'
   compiler-opts:
     - '-I/usr/lib/clang/17/include'
 

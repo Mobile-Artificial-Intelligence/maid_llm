@@ -47,7 +47,7 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
 
     GptParams gptParams = GptParams(_model!);
 
-    Stream<String> stream = MaidLLM(gptParams).prompt(_messages, "");
+    Stream<String> stream = LCPP(gptParams).prompt(_messages, "");
 
     setState(() {
       _messages.add(ChatMessage(role: 'assistant', content: ""));

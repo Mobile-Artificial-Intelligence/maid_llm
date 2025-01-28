@@ -1,8 +1,4 @@
-import 'dart:ffi';
-
-import 'bindings.dart';
-
-import 'package:ffi/ffi.dart';
+part of '../maid_llm.dart';
 
 class SamplingParams {
   // number of previous tokens to remember
