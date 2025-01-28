@@ -41,9 +41,7 @@ class LlamaCPP {
   LlamaCPP(String modelPath, ModelParams modelParams, ContextParams contextParams, {void Function(String)? log}) {
     _log = log;
 
-    if (_log != null) {
-      _log!("Initializing LLM");
-    }
+    _logger('Initializing LLM');
 
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
@@ -60,9 +58,7 @@ class LlamaCPP {
     Isolate.spawn(_initIsolate, initParams).then((value) async {
       receivePort.listen((data) {
         if (data is String) {
-          if (_log != null) {
-            _log!(data);
-          }
+          _logger(data);
 
           _completer!.completeError(Exception(data));
         }
@@ -196,5 +192,11 @@ class LlamaCPP {
 
   void clear() {
     lib.lcpp_cleanup();
+  }
+
+  void _logger(String message) {
+    if (_log != null) {
+      _log!(message);
+    }
   }
 }
