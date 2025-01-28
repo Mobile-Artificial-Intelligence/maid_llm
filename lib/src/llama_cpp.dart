@@ -8,6 +8,11 @@ typedef InitIsolateArguments = ({
   SendPort sendPort
 });
 
+typedef PromptIsolateArguments = ({
+  List<ChatMessage> messages,
+  SendPort sendPort
+});
+
 class LlamaCPP {
   static Completer? _completer;
   static SendPort? _sendPort;
@@ -16,6 +21,8 @@ class LlamaCPP {
   static ffi.Pointer<llama_model>? _model;
   static ffi.Pointer<llama_context>? _context;
   static ffi.Pointer<llama_sampler>? _sampler;
+
+  static int _contextLength = 0;
 
   static void Function(String)? _log;
 
@@ -82,7 +89,12 @@ class LlamaCPP {
     final receivePort = ReceivePort();
     _sendPort = receivePort.sendPort;
 
-    final isolate = await Isolate.spawn(_promptIsolate, (messages, template, _sendPort!));
+    final promptParams = (
+      messages: messages,
+      sendPort: _sendPort!
+    );
+
+    final isolate = await Isolate.spawn(_promptIsolate, promptParams);
 
     await for (var data in receivePort) {
       if (data is (String, bool)) {
@@ -103,6 +115,8 @@ class LlamaCPP {
   }
 
   static void _initIsolate(InitIsolateArguments args) {
+    _sendPort = args.sendPort;
+    
     try {
       lib.ggml_backend_load_all();
 
@@ -130,53 +144,49 @@ class LlamaCPP {
     }
   }
 
-  static void _promptIsolate((List<ChatMessage>, String, SendPort) args) {
-    final (messages, template, sendPort) = args;
-    _sendPort = sendPort;
+  static void _promptIsolate(PromptIsolateArguments args) {
+    _sendPort = args.sendPort;
 
     try {
-      final ret = lib.lcpp_prompt(
-        _toNativeChat(messages, template), 
-        ffi.Pointer.fromFunction(_output), 
-        ffi.Pointer.fromFunction(_logOutput)
+      final nCtx = lib.llama_n_ctx(_context!);
+
+      ffi.Pointer<ffi.Char> formatted = calloc<ffi.Char>(nCtx);
+
+      final template = lib.llama_model_chat_template(_model!, ffi.nullptr);
+
+      int newContextLength = lib.llama_chat_apply_template(
+        template, 
+        args.messages.toNative(), 
+        args.messages.length, 
+        true, 
+        formatted, 
+        nCtx
       );
 
-      if (ret != 0) {
-        throw Exception('Failed to prompt');
+      if (newContextLength > nCtx) {
+        formatted = calloc<ffi.Char>(newContextLength);
+        newContextLength = lib.llama_chat_apply_template(
+          template, 
+          args.messages.toNative(), 
+          args.messages.length, 
+          true, 
+          formatted, 
+          newContextLength
+        );
       }
+
+      if (newContextLength < 0) {
+        _sendPort!.send('Failed to apply template');
+        return;
+      }
+
+      final prompt = formatted.cast<Utf8>().toDartString().substring(_contextLength);
     } catch (e) {
       _sendPort!.send(e.toString());
     }
   }
 
-  static Pointer<lcpp_chat> _toNativeChat(List<ChatMessage> messages, String template) {
-  // Allocate an array of pointers to llama_chat_message
-  final chatMessages = calloc<llama_chat_message>(messages.length);
-
-  int messageCount = 0;
-  int bufferSize = 1;
-
-  for (var i = 0; i < messages.length; i++) {
-    if (messages[i].content.isNotEmpty) {
-      chatMessages[i] = messages[i].toNative().ref;
-      bufferSize += messages[i].content.length;
-      messageCount++;
-    }
-  }
-
-  final chat = calloc<lcpp_chat>();
-  chat.ref.messages = chatMessages;
-  chat.ref.message_count = messageCount;
-  chat.ref.buffer_size = bufferSize;
-
-  if (template.isNotEmpty) {
-    chat.ref.tmpl = template.toNativeUtf8().cast<ffi.Char>();
-  }
-
-  return chat;
-}
-
-  static void _output(Pointer<Char> buffer, bool stop) {
+  static void _output(ffi.Pointer<ffi.Char> buffer, bool stop) {
     try {
       _sendPort!.send((buffer.cast<Utf8>().toDartString(), stop));
     } 
@@ -185,7 +195,7 @@ class LlamaCPP {
     }
   }
 
-  static void _logOutput(Pointer<Char> message) {
+  static void _logOutput(ffi.Pointer<ffi.Char> message) {
     final logMessage = message.cast<Utf8>().toDartString();
 
     _sendPort!.send(logMessage);
@@ -198,7 +208,7 @@ class LlamaCPP {
   }
 
   void clear() {
-    lib.lcpp_cleanup();
+    _contextLength = 0;
   }
 
   void _logger(String message) {
