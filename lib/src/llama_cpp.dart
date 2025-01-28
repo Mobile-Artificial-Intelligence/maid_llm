@@ -4,6 +4,7 @@ typedef InitIsolateArguments = ({
   String modelPath,
   ModelParams modelParams,
   ContextParams contextParams,
+  SamplingParams samplingParams,
   SendPort sendPort
 });
 
@@ -14,6 +15,7 @@ class LlamaCPP {
   static lcpp? _lib;
   static ffi.Pointer<llama_model>? _model;
   static ffi.Pointer<llama_context>? _context;
+  static ffi.Pointer<llama_sampler>? _sampler;
 
   static void Function(String)? _log;
 
@@ -38,7 +40,7 @@ class LlamaCPP {
     return _lib!;
   }
 
-  LlamaCPP(String modelPath, ModelParams modelParams, ContextParams contextParams, {void Function(String)? log}) {
+  LlamaCPP(String modelPath, ModelParams modelParams, ContextParams contextParams, SamplingParams samplingParams, {void Function(String)? log}) {
     _log = log;
 
     _logger('Initializing LLM');
@@ -52,6 +54,7 @@ class LlamaCPP {
       modelPath: modelPath,
       modelParams: modelParams,
       contextParams: contextParams,
+      samplingParams: samplingParams,
       sendPort: _sendPort!
     );
 
@@ -115,6 +118,10 @@ class LlamaCPP {
 
       _context = lib.llama_init_from_model(_model!, contextParams);
       assert(_context != null && _context != ffi.nullptr, 'Failed to initialize context');
+
+      final vocab = lib.llama_model_get_vocab(_model!);
+      _sampler = args.samplingParams.toNative(vocab);
+      assert(_sampler != null && _sampler != ffi.nullptr, 'Failed to initialize sampler');
 
       args.sendPort.send(null);
       return;
