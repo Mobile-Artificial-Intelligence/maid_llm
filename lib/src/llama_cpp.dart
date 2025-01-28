@@ -36,7 +36,7 @@ class LlamaCPP {
     return _lib!;
   }
 
-  LlamaCPP(GptParams params, {void Function(String)? log}) {
+  LlamaCPP(String modelPath, ModelParams modelParams, {void Function(String)? log}) {
     _log = log;
 
     if (_log != null) {
@@ -48,7 +48,13 @@ class LlamaCPP {
 
     _completer = Completer();
 
-    Isolate.spawn(_initIsolate, (params, _sendPort!)).then((value) async {
+    final initParams = (
+      modelPath: modelPath,
+      modelParams: modelParams,
+      sendPort: _sendPort!
+    );
+
+    Isolate.spawn(_initIsolate, initParams).then((value) async {
       receivePort.listen((data) {
         if (data is int) {
           if (data == 0) {
