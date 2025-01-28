@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(MAID_LLM_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-set(LLAMA_CPP_DIR ${MAID_LLM_SRC_DIR}/llama_cpp)
+set(LCPP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+set(LLAMA_CPP_DIR ${LCPP_SRC_DIR}/llama_cpp)
 
 set(BUILD_SHARED_LIBS ON)
 set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "library install dir" FORCE)
@@ -16,9 +16,9 @@ else()
   message(WARNING "Vulkan not found, building without Vulkan support")
 endif()
 
-add_library(maid_llm SHARED
-  ${MAID_LLM_SRC_DIR}/maid_llm.cpp
-  ${MAID_LLM_SRC_DIR}/build-info.c
+add_library(lcpp SHARED
+  ${LCPP_SRC_DIR}/lcpp.cpp
+  ${LCPP_SRC_DIR}/build-info.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml-alloc.c
   ${LLAMA_CPP_DIR}/ggml/src/ggml-backend.c
@@ -37,35 +37,35 @@ add_library(maid_llm SHARED
 )
 
 # Add this line to include the llama_cpp directory
-target_include_directories(maid_llm PRIVATE
-  ${MAID_LLM_SRC_DIR}
+target_include_directories(lcpp PRIVATE
+  ${LCPP_SRC_DIR}
   ${LLAMA_CPP_DIR}/ggml/include
   ${LLAMA_CPP_DIR}/include
   ${LLAMA_CPP_DIR}/common
 )
 
-set_target_properties(maid_llm PROPERTIES
-  PUBLIC_HEADER ${MAID_LLM_SRC_DIR}/maid_llm.h
+set_target_properties(lcpp PROPERTIES
+  PUBLIC_HEADER ${LCPP_SRC_DIR}/lcpp.h
   OUTPUT_NAME "maid"
   BUILD_WITH_INSTALL_RPATH TRUE
   INSTALL_RPATH "$ORIGIN"
 )
 
-target_compile_definitions(maid_llm PUBLIC DART_SHARED_LIB)
+target_compile_definitions(lcpp PUBLIC DART_SHARED_LIB)
 
-target_compile_options(maid_llm PRIVATE 
+target_compile_options(lcpp PRIVATE 
   -O3 
   -DNDEBUG
   -ffunction-sections 
   -fdata-sections
 )
 
-target_link_options(maid_llm PRIVATE 
+target_link_options(lcpp PRIVATE 
   -Wl,--gc-sections 
   -flto
 )
 
 # Enable compiler optimizations for arm64-v8a
 if(ANDROID_ABI STREQUAL "arm64-v8a")
-  target_compile_options(maid_llm PRIVATE -march=armv8.4-a+fp16+dotprod)
+  target_compile_options(lcpp PRIVATE -march=armv8.4-a+fp16+dotprod)
 endif()

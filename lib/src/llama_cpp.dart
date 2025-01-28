@@ -1,9 +1,17 @@
-part of '../maid_llm.dart';
+part of '../lcpp.dart';
+
+typedef InitIsolateArguments = ({
+  ModelParams modelParams,
+  SendPort sendPort
+});
 
 class LlamaCPP {
   static Completer? _completer;
   static SendPort? _sendPort;
+
   static lcpp? _lib;
+  static llama_model_params? _modelParams;
+
   static void Function(String)? _log;
 
   /// Getter for the Llama library.
@@ -18,7 +26,7 @@ class LlamaCPP {
         _lib = lcpp(DynamicLibrary.open('llama.so'));
       } 
       else if (Platform.isMacOS || Platform.isIOS) {
-        _lib = lcpp(DynamicLibrary.open('maid_llm.framework/maid_llm'));
+        _lib = lcpp(DynamicLibrary.open('lcpp.framework/lcpp'));
       } 
       else {
         throw Exception('Unsupported platform');
@@ -27,7 +35,7 @@ class LlamaCPP {
     return _lib!;
   }
 
-  LCPP(GptParams params, {void Function(String)? log}) {
+  LlamaCPP(GptParams params, {void Function(String)? log}) {
     _log = log;
 
     if (_log != null) {
@@ -84,17 +92,15 @@ class LlamaCPP {
     }
   }
 
-  static void _initIsolate((GptParams, SendPort) args) {
-    final (params, sendPort) = args;
-    _sendPort = sendPort;
+  static void _initIsolate(InitIsolateArguments args) {
+    _sendPort = args.sendPort;
 
     try {
-      final ret = lib.maid_llm_model_init(params.toNative(), Pointer.fromFunction(_logOutput));
-      if (ret != 0) {
-        throw Exception('Failed to initialize model');
-      }
+      _modelParams = args.modelParams.toNative();
+      
 
-      _sendPort!.send(ret);
+
+      _sendPort!.send(1);
     } catch (e) {
       _sendPort!.send(e.toString());
     }
@@ -105,10 +111,10 @@ class LlamaCPP {
     _sendPort = sendPort;
 
     try {
-      final ret = lib.maid_llm_prompt(
+      final ret = lib.lcpp_prompt(
         _toNativeChat(messages, template), 
-        Pointer.fromFunction(_output), 
-        Pointer.fromFunction(_logOutput)
+        ffi.Pointer.fromFunction(_output), 
+        ffi.Pointer.fromFunction(_logOutput)
       );
 
       if (ret != 0) {
@@ -119,7 +125,7 @@ class LlamaCPP {
     }
   }
 
-  static Pointer<maid_llm_chat> _toNativeChat(List<ChatMessage> messages, String template) {
+  static Pointer<lcpp_chat> _toNativeChat(List<ChatMessage> messages, String template) {
   // Allocate an array of pointers to llama_chat_message
   final chatMessages = calloc<llama_chat_message>(messages.length);
 
@@ -134,7 +140,7 @@ class LlamaCPP {
     }
   }
 
-  final chat = calloc<maid_llm_chat>();
+  final chat = calloc<lcpp_chat>();
   chat.ref.messages = chatMessages;
   chat.ref.message_count = messageCount;
   chat.ref.buffer_size = bufferSize;
@@ -162,12 +168,12 @@ class LlamaCPP {
   }
 
   Future<void> stop() async {
-    lib.maid_llm_stop();
+    lib.lcpp_stop();
     await _completer!.future;
     return;
   }
 
   void clear() {
-    lib.maid_llm_cleanup();
+    lib.lcpp_cleanup();
   }
 }

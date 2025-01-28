@@ -1,6 +1,6 @@
-# maid_llm_example
+# lcpp_example
 
-Demonstrates how to use the maid_llm plugin.
+Demonstrates how to use the lcpp plugin.
 
 ## Getting Started
 

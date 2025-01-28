@@ -120,6 +120,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  lcpp:
+    dependency: "direct main"
+    description:
+      path: ".."
+      relative: true
+    source: path
+    version: "1.0.1"
   leak_tracker:
     dependency: transitive
     description:
@@ -152,13 +159,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
-  maid_llm:
-    dependency: "direct main"
-    description:
-      path: ".."
-      relative: true
-    source: path
-    version: "1.0.1"
   matcher:
     dependency: transitive
     description:

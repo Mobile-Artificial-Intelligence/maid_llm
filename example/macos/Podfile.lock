@@ -1,21 +1,21 @@
 PODS:
   - FlutterMacOS (1.0.0)
-  - maid_llm (0.0.1):
+  - lcpp (0.0.1):
     - FlutterMacOS
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - maid_llm (from `Flutter/ephemeral/.symlinks/plugins/maid_llm/macos`)
+  - lcpp (from `Flutter/ephemeral/.symlinks/plugins/lcpp/macos`)
 
 EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
-  maid_llm:
-    :path: Flutter/ephemeral/.symlinks/plugins/maid_llm/macos
+  lcpp:
+    :path: Flutter/ephemeral/.symlinks/plugins/lcpp/macos
 
 SPEC CHECKSUMS:
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  maid_llm: bb91e8dc679491ccc5ec46e390f62db99afd5c2b
+  lcpp: bb91e8dc679491ccc5ec46e390f62db99afd5c2b
 
 PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
 

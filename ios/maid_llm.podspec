@@ -1,15 +1,15 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint maid_llm.podspec` to validate before publishing.
+# Run `pod lib lint lcpp.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'maid_llm'
+  s.name             = 'lcpp'
   s.version          = '0.0.1'
   s.summary          = 'A Flutter FFI plugin for interfacing with llama_cpp.'
   s.description      = <<-DESC
 A new Flutter FFI plugin project.
                        DESC
-  s.homepage         = 'https://github.com/Mobile-Artificial-Intelligence/maid_llm'
+  s.homepage         = 'https://github.com/Mobile-Artificial-Intelligence/lcpp'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Dane Madsen' => 'dane_madsen@hotmail.com' }
   s.dependency 'Flutter'
