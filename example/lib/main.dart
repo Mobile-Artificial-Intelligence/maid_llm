@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -45,9 +47,16 @@ class _MaidLlmAppState extends State<MaidLlmApp> {
       _controller.clear();
     });
 
-    GptParams gptParams = GptParams(_model!);
-
-    Stream<String> stream = LCPP(gptParams).prompt(_messages, "");
+    Stream<String> stream = LlamaCPP(
+      _model!,
+      ModelParams(),
+      ContextParams(),
+      SamplingParams(
+        minP: (p: 0.05, minKeep: 1),
+        temperature: (temperature: 0.8, delta: null, exponent: null),
+        seed: Random().nextInt(1000000)
+      )
+    ).prompt(_messages);
 
     setState(() {
       _messages.add(ChatMessage(role: 'assistant', content: ""));
