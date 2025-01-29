@@ -20,8 +20,7 @@ A new Flutter FFI plugin project.
   # paths, so Classes contains a forwarder C file that relatively imports
   # `../src/*` so that the C sources can be shared among all target platforms.
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*', 
-                   'llama_cpp/src/llama.cpp',
+  s.source_files = 'llama_cpp/src/llama.cpp',
                    'llama_cpp/ggml/src/ggml.c',
                    'llama_cpp/ggml/src/ggml-alloc.c',
                    'llama_cpp/ggml/src/ggml-backend.c',
@@ -40,13 +39,13 @@ A new Flutter FFI plugin project.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'USER_HEADER_SEARCH_PATHS' => [
-      '$(PODS_TARGET_SRCROOT)/llama_cpp', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/src', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/common', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/include'
     ],
     'HEADER_SEARCH_PATHS' => [
-      '$(PODS_TARGET_SRCROOT)/llama_cpp', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/src', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/common', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', 
       '$(PODS_TARGET_SRCROOT)/llama_cpp/include'
