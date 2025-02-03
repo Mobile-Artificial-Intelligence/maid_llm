@@ -41,7 +41,7 @@ class LlamaCPP {
         _lib = lcpp(ffi.DynamicLibrary.open('llama.dll'));
       } 
       else if (Platform.isLinux || Platform.isAndroid) {
-        _lib = lcpp(ffi.DynamicLibrary.open('llama.so'));
+        _lib = lcpp(ffi.DynamicLibrary.open('libllama.so'));
       } 
       else if (Platform.isMacOS || Platform.isIOS) {
         _lib = lcpp(ffi.DynamicLibrary.open('lcpp.framework/lcpp'));
