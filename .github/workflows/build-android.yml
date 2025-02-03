@@ -68,6 +68,7 @@ jobs:
 
       - name: Build appbundle
         run: |
+          cd example
           flutter build appbundle
 
       - name: Rename AAB
