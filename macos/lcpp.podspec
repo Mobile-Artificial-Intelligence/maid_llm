@@ -65,16 +65,18 @@ A new Flutter FFI plugin project.
       '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include',
       '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/src',
       '$(PODS_TARGET_SRCROOT)/llama_cpp/common',
-      '$(PODS_TARGET_SRCROOT)/llama_cpp/common'],
-      'HEADER_SEARCH_PATHS' => [
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include/*.h',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/include',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/src',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/**/*.h', 
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/common/**/*.h',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/common',
-        '$(PODS_TARGET_SRCROOT)/llama_cpp/common',],
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common'
+    ],
+    'HEADER_SEARCH_PATHS' => [
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include/*.h',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/include',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/src',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/**/*.h', 
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common/**/*.h',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common',
+      '$(PODS_TARGET_SRCROOT)/llama_cpp/common'
+    ],
     'OTHER_CFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc', '-w', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/include', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/common', '-DGGML_LLAMAFILE=OFF', '-DGGML_USE_CPU'],
     'OTHER_CPLUSPLUSFLAGS' => ['$(inherited)', '-O3', '-flto', '-fno-objc-arc', '-w', '-std=c++17', '-fpermissive', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/include', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/ggml/include', '-I$(PODS_TARGET_SRCROOT)/llama_cpp/common', '-DGGML_LLAMAFILE=OFF', '-DGGML_USE_CPU'],
     'GCC_PREPROCESSOR_DEFINITIONS' => ['$(inherited)', 'GGML_USE_METAL=1'],
@@ -89,7 +91,7 @@ A new Flutter FFI plugin project.
 set -e
 set -u
 set -o pipefail
-cd "${PODS_TARGET_SRCROOT}/llama.cpp"
+cd "${PODS_TARGET_SRCROOT}/llama_cpp"
 xcrun metal -target "air64-${LLVM_TARGET_TRIPLE_VENDOR}-${LLVM_TARGET_TRIPLE_OS_VERSION}${LLVM_TARGET_TRIPLE_SUFFIX:-\"\"}" -ffast-math -std=ios-metal2.3 -o "${METAL_LIBRARY_OUTPUT_DIR}/default.metallib" ggml/src/ggml-metal/*.metal
 SCRIPT
     }
