@@ -49,9 +49,6 @@ jobs:
           echo "releasePassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> example/android/key.properties
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> example/android/key.properties
           echo "releaseAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> example/android/key.properties
-    
-      - name: CD into example
-        run: cd example
 
       - name: Setup Flutter
         run: |
@@ -60,6 +57,7 @@ jobs:
 
       - name: Build APK
         run: |
+          cd example
           flutter build apk -v --split-per-abi
 
       - name: Upload APK
