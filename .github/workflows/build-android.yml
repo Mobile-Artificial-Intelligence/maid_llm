@@ -39,16 +39,16 @@ jobs:
           flutter-version: '3.22.2'
 
       - name: Decode Keystore File
-        run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > android/app/key.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > example/android/app/key.jks
 
       - name: Create key.properties
         run: |
-          echo "storeFile=key.jks" > android/key.properties
-          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "releasePassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
-          echo "releaseAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=key.jks" > example/android/key.properties
+          echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" >> example/android/key.properties
+          echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> example/android/key.properties
+          echo "releasePassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> example/android/key.properties
+          echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> example/android/key.properties
+          echo "releaseAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> example/android/key.properties
     
       - name: CD into example
         run: cd example
