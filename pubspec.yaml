@@ -1,7 +1,7 @@
 name: lcpp
 description: "lcpp is a dart implementation of llama.cpp used by the mobile artificial intelligence distribution (maid)"
 version: 1.0.1
-homepage: "https://github.com/Mobile-Artificial-Intelligence/lcpp"
+homepage: "https://github.com/Mobile-Artificial-Intelligence/dart_lcpp"
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.description      = <<-DESC
 A new Flutter FFI plugin project.
                        DESC
-  s.homepage         = 'https://github.com/Mobile-Artificial-Intelligence/lcpp'
+  s.homepage         = 'https://github.com/Mobile-Artificial-Intelligence/dart_lcpp'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Dane Madsen' => 'dane_madsen@hotmail.com' }
   s.dependency 'Flutter'
