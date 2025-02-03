@@ -72,7 +72,7 @@ jobs:
           flutter build appbundle
 
       - name: Rename AAB
-        run: mv example/build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/example-android-bundle.aab
+        run: mv example/build/app/outputs/bundle/release/app-release.aab example/build/app/outputs/bundle/release/example-android-bundle.aab
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
