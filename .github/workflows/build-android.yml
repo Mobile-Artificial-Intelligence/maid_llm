@@ -39,9 +39,7 @@ jobs:
           flutter-version: '3.22.2'
 
       - name: Decode Keystore File
-        env:
-          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-        run: echo "$KEYSTORE" | base64 --decode > android/app/key.jks
+        run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > android/app/key.jks
 
       - name: Create key.properties
         run: |
