@@ -20,7 +20,8 @@ A new Flutter FFI plugin project.
   # paths, so Classes contains a forwarder C file that relatively imports
   # `../src/*` so that the C sources can be shared among all target platforms.
   s.source           = { :path => '.' }
-  s.source_files = 'llama_cpp/src/*.cpp',
+  s.source_files = 'build-info.c',
+                   'llama_cpp/src/*.cpp',
                    'llama_cpp/common/*.cpp',
                    'llama_cpp/ggml/src/*.cpp',
                    'llama_cpp/ggml/src/ggml-cpu/*.cpp',
