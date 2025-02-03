@@ -7,14 +7,12 @@ class ModelParams {
   bool? useMmap;
   bool? useMlock;
   bool? checkTensors;
-  OnProgressCallback? onProgress;
 
   ModelParams({
     this.vocabOnly,
     this.useMmap,
     this.useMlock,
     this.checkTensors,
-    this.onProgress,
   });
 
   llama_model_params toNative() {
@@ -36,14 +34,6 @@ class ModelParams {
       modelParams.check_tensors = checkTensors!;
     }
 
-    if (onProgress != null) {
-      modelParams.progress_callback = ffi.Pointer.fromFunction(_onProgress, false);
-    }
-
     return modelParams;
-  }
-
-  bool _onProgress(double progress, ffi.Pointer<ffi.Void> userData) {
-    return onProgress!(progress);
   }
 }
